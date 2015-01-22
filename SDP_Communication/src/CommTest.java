@@ -3,13 +3,15 @@ import gnu.io.CommPortIdentifier;
 import gnu.io.SerialPort;
 import gnu.io.SerialPortEvent;
 import gnu.io.SerialPortEventListener;
+
+import java.awt.event.KeyListener;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.Enumeration;
 
 
-public class CommTest implements SerialPortEventListener {
+public class CommTest implements SerialPortEventListener{
     SerialPort serialPort = null;
 
     private static final String PORT_NAMES[] = { 
@@ -138,14 +140,48 @@ public class CommTest implements SerialPortEventListener {
     public static void main(String[] args) throws Exception {
         CommTest test = new CommTest();
         if ( test.initialize() ) {
+        	//sends 0 and 1
+        	/*
             test.sendData("0");
             try { Thread.sleep(2000); } catch (InterruptedException ie) {}
             test.sendData("1");
             try { Thread.sleep(2000); } catch (InterruptedException ie) {}
-            test.sendData(Byte.toString((byte)0));
-            try { Thread.sleep(2000); } catch (InterruptedException ie) {}
-            test.sendData(Byte.toString((byte)1));
-            try { Thread.sleep(2000); } catch (InterruptedException ie) {}
+            */
+        	
+        	 test.sendData("0");
+             try { Thread.sleep(2000); } catch (InterruptedException ie) {}
+             test.sendData("1");
+             try { Thread.sleep(2000); } catch (InterruptedException ie) {}
+             test.sendData(Byte.toString((byte)0));
+             
+             try { Thread.sleep(2000); } catch (InterruptedException ie) {}
+             test.sendData(Byte.toString((byte)1));
+
+             try { Thread.sleep(2000); } catch (InterruptedException ie) {}
+        	/*
+        	String key = "z";
+        	BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        	System.out.println("Listenig");
+        	while (!key.equals("q")) {
+        		key = br.readLine();
+        		System.out.println(key);
+        		switch (key) {
+        			case "w" : //test.sendData(Commands.getCommand(Commands.com0, Commands.dataFull));
+        						test.sendData("0");
+
+        						try { Thread.sleep(2000); } catch (InterruptedException ie) {}
+        						break;
+
+        			case "s" : //test.sendData(Commands.getCommand(Commands.com0, Commands.dataStop));
+        					 test.sendData("1");
+
+        						try { Thread.sleep(2000); } catch (InterruptedException ie) {}
+        						break;
+        		
+        		}
+
+        	}
+        	*/
             test.close();
         }
 
