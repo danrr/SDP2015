@@ -12,10 +12,11 @@ void setup(){
 
 }
 
+
 void loop(){
-  if (Serial.available()>=0){
+  if (Serial.available()>=1){
     msg = (char)Serial.read();
-    if (msg == '1'){
+    if (msg == '0'){
       digitalWrite(13, LOW);
       motorForward(1, 100);
       motorForward(2, 100);
