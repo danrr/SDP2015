@@ -9,7 +9,7 @@ void setup() {
 }
 
 // Accepts an arbitrary string and returns '0' if the param string matches the message, '1' otherwise
-char comp(char* str) {
+char message(char* str) {
     while (Serial.available() > 0)
     {
         if(index < 19)
@@ -36,10 +36,10 @@ char comp(char* str) {
 void loop()
 {
     // Decide what to do when receiving specific messages
-    if (Comp("FORWARD")==0) {
+    if (message("FORWARD")==0) {
         Serial.write("Forward\n");
     }
-    if (Comp("BACKWARD")==0) {
+    if (message("BACKWARD")==0) {
         Serial.write("Backward\n");
     }
 }
