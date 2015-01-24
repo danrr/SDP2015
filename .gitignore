@@ -34,3 +34,6 @@ local.properties
 
 # TeXlipse plugin
 .texlipse
+
+#pycharm .idea
+.idea
