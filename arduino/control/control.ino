@@ -18,7 +18,8 @@ Servo kicker;
 #define _FORWARD 'A'
 #define _BACKWARD 'B' 
 #define _STOP 'C'
-#define _KICK 'D' 
+#define _KICK 'D'
+#define _HEARTBEAT 'E'
 
 /*
   Setup function. Performs the standard SDPsetup routine supplied by
@@ -27,8 +28,6 @@ Servo kicker;
 
 void setup() {
   SDPsetup();
-  helloWorld();
-  
   // attach the kicker servo to pin 3, with 600us to 2400us pulses.
   kicker.attach(3, 600, 2400); 
 }
@@ -44,16 +43,14 @@ void loop() {
 }
 
 /*
-  Fetches a single command from the serial comms (in the shape of a byte)
-  and resets the current command byte if no new orders have been issued.
-  
-  We'll have to change this slightly to enable variable speed etc.
+  Fetches a single command (command byte + data byte) from
+  the serial stream if there is data available.
 */
 
 void fetchCommand() {
-  cmd = '\0';
-  if (Serial.available() >= 1) {
+  if (Serial.available() >= 2) {
     cmd = (char)Serial.read();
+    data = (char)Serial.read();
   }
 }
 
@@ -61,28 +58,22 @@ void fetchCommand() {
   Move forward with the power specified. Currently, 0<=power<=100,
   but will probably make more sense to use the whole byte range
   0-255 in the future.
-  
-  The function doesn't use the power value supplied to it just yet,
-  because having to specify the power would complicate comms debugging.
 */
 
 void moveForward(byte power) {
-  motorForward(2, 100);
-  motorBackward(4, 100);
+  motorForward(2, power);
+  motorBackward(4, power);
 }
 
 /*
   Move backward with the power specified. Currently, 0<=power<=100,
   but will probably make more sense to use the whole byte range
   0-255 in the future.
-  
-  The function doesn't use the power value supplied to it just yet,
-  because having to specify the power would complicate comms debugging.
 */
 
 void moveBackward(byte power) {
-  motorForward(4, 100);
-  motorBackward(2, 100);
+  motorForward(4, power);
+  motorBackward(2, power);
 }
 
 /*
@@ -95,6 +86,10 @@ void moveBackward(byte power) {
 */
 
 void kick() {
+  // reset the command byte so that we don't keep kicking.
+  cmd = 0x00;
+  
+  //then perform the kick.
   kicker.write(90);
   delay(200);
   kicker.write(83);
@@ -113,10 +108,10 @@ void kick() {
 void decodeCommand() {
    switch(cmd) {
      case _FORWARD:
-       moveForward(100);
+       moveForward(data);
        break;
      case _BACKWARD:
-       moveBackward(100);
+       moveBackward(data);
        break;
      case _STOP:
        motorAllStop();
@@ -124,5 +119,19 @@ void decodeCommand() {
      case _KICK:
        kick();
        break; 
+     case _HEARTBEAT:
+       heartbeat(data);
+       break; 
    } 
+}
+
+/*
+  Sends a response to a received Hearbeat request by simply
+  returning the request data. We could do something more sophisticated
+  here, but for now it'll probably do.
+*/
+
+void heartbeat(byte response) {
+  cmd = '\0';
+  Serial.write(response);
 }
