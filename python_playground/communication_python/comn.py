@@ -16,7 +16,7 @@ class Communication():
 
 	def send(self, msg):
 		# Send message to Arduino
-		self.serial.write((str(msg) + '\r').encode())
+		self.serial.write(msg + 'd')
 
 	def read(self, timeout = 5):
 		# Read message sent by the Arduino
@@ -65,16 +65,10 @@ def main():
                 if not ch or ch == chr(4):
                     break
                 char = str.upper(ch)
-                print '%02x' % ord(char)	# prints the hex value of the character (A/B/C/D/E)
-                char += char 				# duplicates the character (must be e.g. AA, not A)
                 print char
                 comm.send(char)
         except (KeyboardInterrupt, EOFError):
             pass
-
-	# thread = Thread(target = comm.read, args=[])
-	# thread.start()
-	# thread.join()
 
 if __name__ == '__main__':
     main()
