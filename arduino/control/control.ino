@@ -10,7 +10,7 @@ byte cmd, data;
 Servo kicker;
 
 /*
-  Command class bytes. Set to the dead-simple A, B, C, D
+  Command class bytes. Set to the dead-simple A, B, C, D, E
   now for debugging purposes, but will change to something
   more professional-looking in the future.
 */
@@ -61,7 +61,7 @@ void fetchCommand() {
 */
 
 void moveForward(byte power) {
-  motorForward(2, power);
+  motorForward(2, power * 0.7); // 70% scaling on the right motor.
   motorBackward(4, power);
 }
 
@@ -72,31 +72,34 @@ void moveForward(byte power) {
 */
 
 void moveBackward(byte power) {
-  motorForward(4, power);
-  motorBackward(2, power);
+  motorForward(4, power); 
+  motorBackward(2, power * 1); // 70% scaling on the right motor. 
 }
 
 /*
-  Perform a kick. Takes no arguments (but maybe should in the future,
-  to enable better control of where the ball ends up going?)
+  Perform a kick. Takes a byte, 0<=power<=100, to determine the relative
+  power of the kick.
   
-  The function also introduces delays into the loop, which obviosuly
+  The function introduces delays into the loop, which obviosuly
   isn't good. We'll have to figure out a way for it to run without locking
   the rest of the Arduino system.
 */
 
-void kick() {
+void kick(byte power) {
   // reset the command byte so that we don't keep kicking.
   cmd = 0x00;
+  
+  // convert the power from a percentage to a ratio.
+  float relativePower = (power/100.0); 
   
   //then perform the kick.
   kicker.write(90);
   delay(200);
-  kicker.write(83);
+  kicker.write(90 - (7 * relativePower));
   delay(500);
-  kicker.write(120);
+  kicker.write(90 + (30 * relativePower));
   delay(200);
-  kicker.write(105);
+  kicker.write(90 + (15 * relativePower));
   delay(200);
   kicker.write(90);
 }
@@ -117,7 +120,7 @@ void decodeCommand() {
        motorAllStop();
        break;
      case _KICK:
-       kick();
+       kick(data);
        break; 
      case _HEARTBEAT:
        heartbeat(data);
