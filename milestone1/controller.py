@@ -20,46 +20,52 @@ if __name__ == '__main__':
 	print "Port:  " + str(comm.port) + ", Baudrate: " + str(comm.baudrate) + ", Timeout: " + str(comm.timeout)
 
 	# Milestone 1 Tasks
-	# TODO: Change communication protocol (i.e. Messages)
 
 	def forward10():
 		# Start moving forward 10cm
-		# comm.send("FORWARD")
+		comm.send("Ad")
 		print "Message: Move Forward"
-		time.sleep(2)
-		# comm.send("STOP")
+		time.sleep(0.42)
+		comm.send("Cd")
 		print "Message: Stop"
 
 	def forward50():
 		# Start moving forward 50cm
-		# comm.send("BACKWARD")
+		comm.send("Ad")
 		print "Message: Move Forward"
-		time.sleep(10)
-		# comm.send("STOP")
+		time.sleep(2.50)
+		comm.send("Cd")
 		print "Message: Stop"
 
 	def backward():
 		# Start moving backwards
-		# comm.send("BACKWARD")
+		comm.send("Bd")
 		print "Message: Move Backward"
-		time.sleep(5)
-		# comm.send("STOP")
+		time.sleep(0.9)
+		comm.send("Cd")
 		print "Message: Stop"
 
-	def kick():
-		# Start kicking once
-		# comm.send("KICK")
-		print "Message: Kick pls"
+	def kickUp():
+		# Start kicking once uphill
+		comm.send("D2")
+		print "Message: Kick up pls"
+
+	def kickDown():
+		# Start kicking once downhill
+		comm.send("D ")
+		print "Message: Kick down pls"
+
 
 	tasks = {
 				1 : forward10,
 				2 : forward50,
 				3 : backward,
-				4 : kick
+				4 : kickUp,
+				5 : kickDown,
 	}
 
 	# Execute given task
 	tasks[int(args.task)]()
 
 	# End
-	# comm.close()
+	comm.close()
