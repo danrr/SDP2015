@@ -15,13 +15,13 @@ if __name__ == '__main__':
 	args = parser.parse_args()
 
 	# Set up connection between the PC and the Arduino
-	comm = Communication(port=args.port,baudrate=args.baudrate,timeout=args.timeout)
+	communication = Communication(port=args.port,baudrate=args.baudrate,timeout=args.timeout)
 
-	print "Port:  " + str(comm.port) + ", Baudrate: " + str(comm.baudrate) + ", Timeout: " + str(comm.timeout)
+	print "Port:  " + str(communication.port) + ", Baudrate: " + str(communication.baudrate) + ", Timeout: " + str(communication.timeout)
 
 	# Milestone 1 Tasks
 
-	def forward10():
+	def forward10(comm):
 		# Start moving forward 10cm
 		comm.send("Ad")
 		print "Message: Move Forward"
@@ -29,43 +29,47 @@ if __name__ == '__main__':
 		comm.send("Cd")
 		print "Message: Stop"
 
-	def forward50():
+	def forward50(comm):
 		# Start moving forward 50cm
 		comm.send("Ad")
 		print "Message: Move Forward"
-		time.sleep(2.50)
+		time.sleep(2.26)
 		comm.send("Cd")
 		print "Message: Stop"
 
-	def backward():
+	def backward(comm):
 		# Start moving backwards
 		comm.send("Bd")
 		print "Message: Move Backward"
-		time.sleep(0.9)
+		time.sleep(0.85)
 		comm.send("Cd")
 		print "Message: Stop"
 
-	def kickUp():
-		# Start kicking once uphill
-		comm.send("D2")
-		print "Message: Kick up pls"
+	def kickAttacker(comm):
+		# Start kicking once very hard
+		comm.send("Dd")
+		print "Message: Kick hard pls"
 
-	def kickDown():
-		# Start kicking once downhill
-		comm.send("D ")
-		print "Message: Kick down pls"
-
-
-	tasks = {
-				1 : forward10,
-				2 : forward50,
-				3 : backward,
-				4 : kickUp,
-				5 : kickDown,
-	}
+	def kickDefender(comm):
+		# Start kicking once smoothly
+		comm.send("D=")
+		print "Message: Kick smooth pls"
 
 	# Execute given task
-	tasks[int(args.task)]()
+	task = int(args.task)
+
+	if (task == 1):
+		forward10(communication)
+	elif (task == 2):
+		forward50(communication)
+	elif (task == 3):
+		backward(communication)
+	elif (task == 4):
+		kickAttacker(communication)
+	elif (task == 5):
+		kickDefender(communication)
+	else:
+		print "Message not recognised"
 
 	# End
-	comm.close()
+	communication.close()
