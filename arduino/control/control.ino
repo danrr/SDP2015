@@ -28,8 +28,8 @@ Servo kicker;
 
 void setup() {
   SDPsetup();
-  // attach the kicker servo to pin 3, with 600us to 2400us pulses.
-  kicker.attach(3, 600, 2400); 
+  // attach the kicker servo to pin 5, with 600us to 2400us pulses.
+  kicker.attach(5, 600, 2400); 
 }
 
 /*
@@ -73,7 +73,7 @@ void moveForward(byte power) {
 
 void moveBackward(byte power) {
   motorForward(4, power); 
-  motorBackward(2, power * 1); // 70% scaling on the right motor. 
+  motorBackward(2, power * 1); // 100% scaling on the right motor. 
 }
 
 /*
