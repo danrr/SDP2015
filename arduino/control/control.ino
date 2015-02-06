@@ -6,20 +6,22 @@
 #include <Wire.h>
 #include <Servo.h>
 
-byte cmd, data;
+byte cmd, data, response;
 Servo kicker;
 
 /*
-  Command class bytes. Set to the dead-simple A, B, C, D, E
+  Command class bytes. Set to gaming-related stuff
   now for debugging purposes, but will change to something
   more professional-looking in the future.
 */
 
-#define _FORWARD 'A'
-#define _BACKWARD 'B' 
-#define _STOP 'C'
-#define _KICK 'D'
-#define _HEARTBEAT 'E'
+#define _FORWARD 'W'
+#define _BACKWARD 'S' 
+#define _STOP ' '
+#define _KICK 'Q'
+#define _HEARTBEAT 'L'
+#define _GRABBER_OPEN 'Z'
+#define _GRABBER_CLOSE 'X'
 
 /*
   Setup function. Performs the standard SDPsetup routine supplied by
@@ -40,6 +42,7 @@ void setup() {
 void loop() {
   fetchCommand();
   decodeCommand();
+  respond();
 }
 
 /*
@@ -51,7 +54,15 @@ void fetchCommand() {
   if (Serial.available() >= 2) {
     cmd = (char)Serial.read();
     data = (char)Serial.read();
+    response = 0x00;
   }
+}
+
+void respond() {
+  if (response) {
+    Serial.write(response);
+  }
+  response = 0x00;
 }
 
 /*
@@ -74,6 +85,18 @@ void moveForward(byte power) {
 void moveBackward(byte power) {
   motorForward(4, power); 
   motorBackward(2, power * 1); // 100% scaling on the right motor. 
+}
+
+void closeGrabber() {
+  motorForward(4, 100);
+  //delay(500);
+  motorStop(4);
+}
+
+void openGrabber() {
+  motorBackward(4, 100);
+  //delay(500);
+  motorStop(4);
 }
 
 /*
@@ -125,6 +148,12 @@ void decodeCommand() {
      case _HEARTBEAT:
        heartbeat(data);
        break; 
+     case _GRABBER_OPEN:
+       openGrabber();
+     break;
+     case _GRABBER_CLOSE:
+       closeGrabber();
+     break;
    } 
 }
 
@@ -134,7 +163,7 @@ void decodeCommand() {
   here, but for now it'll probably do.
 */
 
-void heartbeat(byte response) {
-  cmd = '\0';
-  Serial.write(response);
+void heartbeat(byte _data) {
+  cmd = 0x00;
+  response = _data;
 }
