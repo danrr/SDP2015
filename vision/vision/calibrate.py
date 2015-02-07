@@ -16,13 +16,15 @@ NCMATRIX = distort_data['new_camera_matrix']
 CMATRIX = distort_data['camera_matrix']
 DIST = distort_data['dist']
 
-
+#Configures the croppings.json file specifing where the pitch is on the video feed and
+#where the zones. Order of dots does not matter, drawing polygons
 class Configure(object):
-
+        # 640 x 480 probably the dimenisions of the frame
         def __init__(self, pitch, width=640, height=480):
                 self.width = width
                 self.height = height
                 self.pitch = pitch
+                #0 for single camera connected, creates VideoCapture object
                 self.camera = cv2.VideoCapture(0)
                 self.new_polygon = True
                 self.polygon = self.polygons = []
@@ -38,7 +40,8 @@ class Configure(object):
 
                 self.color = RED
 
-
+        #Main funtion of the class, prompts to draw polygons that describe the pitch, zones, and defines the goals
+        #stores them in cropping.json at the end
         def run(self, camera=False):
                 frame = cv2.namedWindow(FRAME_NAME)
 
@@ -50,11 +53,13 @@ class Configure(object):
                         for i in range(10):
                                 status, image = cap.read()
                 else:
+                        #Don't know where the file is
                         image = cv2.imread('00000001.jpg')
-
+                #removes radial and tangential distortion of the image
                 self.image = cv2.undistort(image, CMATRIX, DIST, None, NCMATRIX)
 
                 # Get various data about the image from the user
+                # Displays minimum rectangle enclosing polygon, selected by the user
                 self.get_pitch_outline()
 
                 self.get_zone('Zone_0', 'draw LEFT Defender')
@@ -105,9 +110,10 @@ class Configure(object):
                 size = tools.find_crop_coordinates(self.image, self.data[self.drawing])
                 # Crop
                 self.image = self.image[size[2]:size[3], size[0]:size[1]]
-
+                #display image
                 cv2.imshow(FRAME_NAME, self.image)
 
+        #Draws a red dot on click and stores given point
         def draw(self, event, x, y, flags, param):
                 """
                 Callback for events

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 import cv2
 import json
@@ -51,6 +52,7 @@ def get_json(filename=PATH+'/calibrations/calibrations.json'):
 
 def get_radial_data(pitch=0, filename=PATH+'/calibrations/undistort.txt'):
     _file = open(filename, 'r')
+    #pickles/serializes the data in the file undistort
     data = cPickle.load(_file)
     _file.close()
     return data[pitch]
@@ -118,13 +120,27 @@ def write_json(filename=PATH+'/calibrations/calibrations.json', data={}):
     _file.write(json.dumps(data))
     _file.close()
 
-
+#Returns area enclosed in the polygon by the red dots, rest of the image will be zeroes
 def mask_pitch(frame, points):
+    """
+    Hue : the color type (such as red, blue, or yellow).
+        Ranges from 0 to 360° in most applications. (each value corresponds to one color : 0 is red, 45 is a shade of orange and 55 is a shade of yellow).
+    Saturation:the intensity of the color.
+        Ranges from 0 to 100% (0 means no color, that is a shade of grey between black and white; 100 means intense color).
+        Also sometimes called the "purity" by analogy to the colorimetric quantities excitation purity.
+    Brightness (or Value) : the brightness of the color.
+        Ranges from 0 to 100% (0 is always black; depending on the saturation, 100 may be white or a more or less saturated color).
+    """
     mask = frame.copy()
+    #create a numpy array
     points = np.array(points, np.int32)
+    #draws filled convex polygon
     cv2.fillConvexPoly(mask, points, BLACK)
+    #converts into HSV
     hsv_mask = cv2.cvtColor(mask, cv2.COLOR_BGR2HSV)
     mask = cv2.inRange(hsv_mask, (0, 0, 0), (0, 0, 0))
+    #ands frame with itself wherever the mask isn't 0
+    m = cv2.bitwise_and(frame, frame, mask=mask)
     return cv2.bitwise_and(frame, frame, mask=mask)
 
 
@@ -135,7 +151,9 @@ def find_extremes(coords):
     bottom = max(coords, key=lambda x: x[1])[1]
     return (left, right, top, bottom)
 
-
+#returns coordinates of the the image to make it square
+#Usage : frame is a mask, polygon enclosed by the red dots,
+#this functions encloses it in a minimum square
 def find_crop_coordinates(frame, keypoints=None, width=520, height=285):
     """
     Get crop coordinated for the actual image based on masked version.

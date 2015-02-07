@@ -166,9 +166,9 @@ class RobotTracker(Tracker):
         """
         self.name = name
         self.crop = crop
-
+        #TODO is this being used anywhere?
         self.color = [calibration[color]]
-
+        #TODO is this being used anywhere?
         self.color_name = color
         self.offset = offset
         self.pitch = pitch

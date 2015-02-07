@@ -129,7 +129,7 @@ class Vision:
         from the center of the lens.
         """
         plane_height = 250.0
-        robot_height = 20.0
+        robot_height = 0.0
         coefficient = robot_height/plane_height
 
         x = point[0]
@@ -293,6 +293,8 @@ class GUI(object):
 
         cv2.createTrackbar(self.BG_SUB, self.VISION, 0, 1, self.nothing)
         cv2.createTrackbar(self.NORMALIZE, self.VISION, 0, 1, self.nothing)
+        #If no connection with arduino can be estabilished and slider is moved to 1
+        #it will incorrectly reflect the communications state
         cv2.createTrackbar(
             self.COMMS, self.VISION, self.arduino.comms, 1, lambda x:  self.arduino.setComms(x))
 

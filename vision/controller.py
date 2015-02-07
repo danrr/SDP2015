@@ -22,15 +22,19 @@ class Controller:
         Entry point for the SDP system.
 
         Params:
-            [int] video_port                port number for the camera
+            [int] video_port                port number for the camera , Feed is only reachable from the same room
+                                            therefor always 0
             [string] comm_port              port number for the arduino
-            [int] pitch                     0 - main pitch, 1 - secondary pitch
+            [int] pitch                     0 - main pitch, 1 - secondary pitch , get's the correct croppings from json
             [string] our_side               the side we're on - 'left' or 'right'
             *[int] port                     The camera port to take the feed from
             *[Robot_Controller] attacker    Robot controller object - Attacker Robot has a RED
                                             power wire
             *[Robot_Controller] defender    Robot controller object - Defender Robot has a YELLOW
                                             power wire
+            [int]comms                      Sets the communications with the arduino, If 0 and using set write function
+                                            no actual write will be done to arduino, If 1 (or higher) commands will
+                                            be able to be sent to Arduino
         """
         assert pitch in [0, 1]
         assert color in ['yellow', 'blue']
@@ -119,6 +123,11 @@ class Controller:
 class Arduino:
 
     def __init__(self, port, rate, timeOut, comms):
+        """
+            [int]comms                      Sets the communications with the arduino, If 0 and using set write function
+                                            no actual write will be done to arduino, If 1 (or higher) commands will
+                                            be able to be sent to Arduino
+        """
         self.serial = None
         self.comms = comms
         self.port = port
@@ -138,6 +147,7 @@ class Arduino:
                     self.comms = 0
                     #raise
         else:
+            print ("Communication with Arduino is turned off")
             #self.write('A_RUN_KICK\n')
             self.write('A_RUN_ENGINE %d %d\n' % (0, 0))
             #self.write('D_RUN_KICK\n')
@@ -150,15 +160,19 @@ class Arduino:
 
 
 if __name__ == '__main__':
+    #argparse is used for including help -h to python command line, also to translate arguments like nocomms
+    #from -n to True or False
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("pitch", help="[0] Main pitch, [1] Secondary pitch")
     parser.add_argument("side", help="The side of our defender ['left', 'right'] allowed.")
     parser.add_argument("color", help="The color of our team - ['yellow', 'blue'] allowed.")
+    #store_true translates -n or --nocomms to True value for comms argument
     parser.add_argument(
         "-n", "--nocomms", help="Disables sending commands to the robot.", action="store_true")
 
     args = parser.parse_args()
+    #Based on nocomms value ( -n / --nocomms) turns off or on the communications for arduino
     if args.nocomms:
         c = Controller(
             pitch=int(args.pitch), color=args.color, our_side=args.side, comms=0).wow()
