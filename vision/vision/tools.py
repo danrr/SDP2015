@@ -61,16 +61,19 @@ def get_radial_data(pitch=0, filename=PATH+'/calibrations/undistort.txt'):
 def get_colors(pitch=0, filename=PATH+'/calibrations/calibrations.json'):
     """
     Get colros from the JSON calibration file.
+    Json file : specific - values in this column will be overriden by exiting application
+                default - values that was found to be working the best, backup
     Converts all
     """
     json_content = get_json(filename)
     machine_name = socket.gethostname().split('.')[0]
     pitch_name = 'PITCH0' if pitch == 0 else 'PITCH1'
 
-    if machine_name in json_content:
-        current = json_content[machine_name][pitch_name]
-    else:
-        current = json_content['default'][pitch_name]
+    #these can be overriden when exiting gui
+    current = json_content['specific'][pitch_name]
+    #to use default which will not be overriden
+    #current = json_content['default'][pitch_name]
+
 
     # convert mins and maxes into np.array
     for key in current:
@@ -95,12 +98,10 @@ def save_colors(pitch, colors, filename=PATH+'/calibrations/calibrations.json'):
             key_dict['min'] = list(key_dict['min'])
         if 'max' in key_dict:
             key_dict['max'] = list(key_dict['max'])
-
-    if machine_name in json_content:
-        json_content[machine_name][pitch_name].update(colors)
-    else:
-        json_content[machine_name] = json_content['default']
-        json_content[machine_name][pitch_name].update(colors)
+    #store values in 'specific' comlumn
+    json_content['specific'][pitch_name].update(colors)
+    #backup default should be used only for one time calibration and the values duplicated to specific
+    #json_content['default'][pitch_name].update(colors)
 
     write_json(filename, json_content)
 

@@ -243,7 +243,6 @@ class Camera(object):
         self.capture = cv2.VideoCapture(port)
         calibration = tools.get_croppings(pitch=pitch)
         self.crop_values = tools.find_extremes(calibration['outline'])
-
         # Parameters used to fix radial distortion
         radial_data = tools.get_radial_data()
         self.nc_matrix = radial_data['new_camera_matrix']
