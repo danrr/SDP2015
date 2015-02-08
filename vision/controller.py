@@ -75,48 +75,57 @@ class Controller:
         """
         counter = 1L
         timer = time.clock()
+	
+	try:
+		c = True
+		while c != 27:  # the ESC key
 
-        c = True
-        while c != 27:  # the ESC key
+		    frame = self.camera.get_frame()
+		    pre_options = self.preprocessing.options
+		    # Apply preprocessing methods toggled in the UI
+		    preprocessed = self.preprocessing.run(frame, pre_options)
+		    frame = preprocessed['frame']
+		    if 'background_sub' in preprocessed:
+		        cv2.imshow('bg sub', preprocessed['background_sub'])
+		    # Find object positions
+		    # model_positions have their y coordinate inverted
 
-            frame = self.camera.get_frame()
-            pre_options = self.preprocessing.options
-            # Apply preprocessing methods toggled in the UI
-            preprocessed = self.preprocessing.run(frame, pre_options)
-            frame = preprocessed['frame']
-            if 'background_sub' in preprocessed:
-                cv2.imshow('bg sub', preprocessed['background_sub'])
-            # Find object positions
-            # model_positions have their y coordinate inverted
+		    model_positions, regular_positions = self.vision.locate(frame)
+		    model_positions = self.postprocessing.analyze(model_positions)
 
-            model_positions, regular_positions = self.vision.locate(frame)
-            model_positions = self.postprocessing.analyze(model_positions)
-
-            #TODO modified from original
-            attacker_actions = {'catcher': 0, 'left_motor': 0, 'speed': 0, 'kicker': 0, 'right_motor': 0}
-            defender_actions = {'catcher': 0, 'left_motor': 0, 'speed': 0, 'kicker': 0, 'right_motor': 0}
+		    #TODO modified from original
+		    attacker_actions = {'catcher': 0, 'left_motor': 0, 'speed': 0, 'kicker': 0, 'right_motor': 0}
+		    defender_actions = {'catcher': 0, 'left_motor': 0, 'speed': 0, 'kicker': 0, 'right_motor': 0}
 
 
-            #TODO modified from original
-            # Information about the grabbers from the world
-            grabbers = None
+		    #TODO modified from original
+		    # Information about the grabbers from the world
+		    grabbers = None
 
-            #TODO modified from original
-            # Information about states
-            attackerState = ("","")
-            defenderState = ("","")
+		    #TODO modified from original
+		    # Information about states
+		    attackerState = ("","")
+		    defenderState = ("","")
 
-            # Use 'y', 'b', 'r' to change color.
-            c = waitKey(2) & 0xFF
-            actions = []
-            fps = float(counter) / (time.clock() - timer)
-            # Draw vision content and actions
+		    # Use 'y', 'b', 'r' to change color.
+		    c = waitKey(2) & 0xFF
+		    actions = []
+		    fps = float(counter) / (time.clock() - timer)
+		    # Draw vision content and actions
 
-            self.GUI.draw(
-                frame, model_positions, actions, regular_positions, fps, attackerState,
-                defenderState, attacker_actions, defender_actions, grabbers,
-                our_color=self.color, our_side=self.side, key=c, preprocess=pre_options)
-            counter += 1
+		    self.GUI.draw(
+		        frame, model_positions, actions, regular_positions, fps, attackerState,
+		        defenderState, attacker_actions, defender_actions, grabbers,
+		        our_color=self.color, our_side=self.side, key=c, preprocess=pre_options)
+		    counter += 1
+
+	except:
+            raise
+
+        finally:
+            # Write the new calibrations to a file.
+            tools.save_colors(self.pitch, self.calibration)
+
 
 
 
