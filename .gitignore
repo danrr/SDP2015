@@ -10,6 +10,7 @@ tmp/
 local.properties
 .settings/
 .loadpath
+.py[ocd]
 
 # Eclipse Core
 .project
