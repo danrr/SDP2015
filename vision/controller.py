@@ -11,7 +11,6 @@ import time
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-
 class Controller:
     """
     Primary source of robot control. Ties vision and planning together.
