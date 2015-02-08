@@ -15,6 +15,7 @@
 byte cmd, data, response;
 Servo kicker;
 unsigned long current_millis;
+int targetHeading;
 
 /* Assign a unique ID to the sensors */
 
@@ -49,11 +50,14 @@ Command commands[7];
 #define _TURN_RIGHT 'D'
 #define _TURN_TO 'O'
 
-#define LEFT_DRIVE 2
-#define RIGHT_DRIVE 4
+#define _LEFT_DRIVE 2
+#define _RIGHT_DRIVE 4
 #define BACK_DRIVE 3
 #define LEFT_GRABBER 1
 #define RIGHT_GRABBER 5
+
+#define _HEADING_TOLERANCE 1
+#define _HEADING_CORRECTION_COEFFICIENT 0.5
 
 
 /*
@@ -133,11 +137,13 @@ void decodeCommand() {
       commands[0].millis = millis();
       commands[0].functionPtr = &moveForward;
       commands[0].data = data;
+      targetHeading = getCurrentHeading();
       break; 
     case _BACKWARD:
       commands[0].millis = millis();
       commands[0].functionPtr = &moveBackward;
       commands[0].data = data;
+      targetHeading = getCurrentHeading();
       break; 
     case _STOP:
       commands[0].millis = millis();
@@ -197,9 +203,9 @@ void decodeCommand() {
       heartbeat(data);
       break; 
 
-     // case _GET_HEADING:
-     //   returnHeading();
-     //   break;
+    case _GET_HEADING:
+      returnHeading();
+      break;
      
    }
 }
@@ -229,30 +235,47 @@ void voidCommand(short i) {
 // move commands
 void moveForward(byte power) {
   //check compass and do things
-  motorBackward(LEFT_DRIVE, power);
-  motorForward(RIGHT_DRIVE, power);
+  int headingDiff = getHeadingDiff(targetHeading, getCurrentHeading());
+  Serial.write(abs(headingDiff) / 2);
+  if (headingDiff > (_HEADING_TOLERANCE)) {
+    // turn left....
+    Serial.write(0xFF);
+    motorBackward(_LEFT_DRIVE, power - abs(headingDiff) * _HEADING_CORRECTION_COEFFICIENT);
+    motorForward(_RIGHT_DRIVE, power);
+  } else if (headingDiff < -(_HEADING_TOLERANCE)) {
+    // turn right..
+    Serial.write(0xFE);
+    motorBackward(_LEFT_DRIVE, power);
+    motorForward(_RIGHT_DRIVE, power - abs(headingDiff) * _HEADING_CORRECTION_COEFFICIENT);
+  } else {
+    motorBackward(_LEFT_DRIVE, power);
+    motorForward(_RIGHT_DRIVE, power);
+  }
+  commands[0].millis += 100;
 }
+   
+ 
 
 void moveBackward(byte power) {
   //check compass and do things
-  motorForward(LEFT_DRIVE, power); 
-  motorBackward(RIGHT_DRIVE, power);
+  motorForward(_LEFT_DRIVE, power); 
+  motorBackward(_RIGHT_DRIVE, power);
 }
 
 void driveMotorStop(byte data) {
-  motorStop(LEFT_DRIVE);
-  motorStop(RIGHT_DRIVE);
+  motorStop(_LEFT_DRIVE);
+  motorStop(_RIGHT_DRIVE);
   voidCommand(0);
 }
 
 // void turnLeft(byte power) {
-//    motorForward(LEFT_DRIVE, power);
-//    motorForward(RIGHT_DRIVE, power);
+//    motorForward(_LEFT_DRIVE, power);
+//    motorForward(_RIGHT_DRIVE, power);
 //  }
  
 // void turnRight(byte power) {
-//    motorBackward(LEFT_DRIVE, power);
-//    motorBackward(RIGHT_DRIVE, power);
+//    motorBackward(_LEFT_DRIVE, power);
+//    motorBackward(_RIGHT_DRIVE, power);
 //  }
 
 //grabber commands
@@ -330,23 +353,41 @@ void heartbeat(byte _data) {
 //   motorAllStop();
 // }
 
-// void returnHeading() {
-//   cmd = 0x00;
-//   response = (byte) (getMagOrientation() / 2); 
-// }
+void returnHeading() {
+  response = (byte) (getCurrentHeading() / 2); 
+}
 
-// short getMagOrientation() {
-//   sensors_event_t mag_event;
-//   sensors_vec_t   orientation;
+/*
+  getHeadingDiff:
+
+  Returns the relative difference between the target heading
+  and the current heading. Positive direction is
+  counter-clockwise, so a returned value of eg. 10 means that
+  the robot should turn 10 degrees left to be on target.
+  Similarly, a returned value of -20 would indicate that the
+  robot would have to turn 20 degrees right to be on target.
+*/
+
+int getHeadingDiff(int targetHeading, int currentHeading) {
+  int diff = (targetHeading - currentHeading + 360) % 360;
+  if (diff > 180) {
+    return -360 + diff;
+  }
+  return diff;
+}
+
+int getCurrentHeading() {
+  sensors_event_t mag_event;
+  sensors_vec_t   orientation;
   
-//   /* Calculate the heading using the magnetometer */
-//   mag.getEvent(&mag_event);
-//   if (dof.magGetOrientation(SENSOR_AXIS_Y, &mag_event, &orientation))
-//   {
-//     /* 'orientation' should have valid .heading data now */
-//     return (short) orientation.heading;
-//   }
-// }
+  /* Calculate the heading using the magnetometer */
+  mag.getEvent(&mag_event);
+  if (dof.magGetOrientation(SENSOR_AXIS_Y, &mag_event, &orientation))
+  {
+    /* 'orientation' should have valid .heading data now */
+    return (int) orientation.heading;
+  }
+}
 
 // short getGyroOrientation() {
 //   sensors_event_t event; 
