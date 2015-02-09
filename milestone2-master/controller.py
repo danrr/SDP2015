@@ -17,7 +17,7 @@ class Controller:
     Primary source of robot control. Ties vision and planning together.
     """
 
-    def __init__(self, pitch, color, our_side, video_port=0, comm_port='/dev/ttyUSB0', comms=1):
+    def __init__(self, pitch, color, our_side, video_port=0, comm_port='/dev/ttyUSB0', comms=1, role="defender"):
         """
         Entry point for the SDP system.
 
@@ -74,8 +74,13 @@ class Controller:
         self.preprocessing = Preprocessing()
 
         #Planning code
-        self.attacker = Attacker_Controller()
-        self.defender = Defender_Controller()
+        self.attacker = None
+        self.defender = None
+
+        if(role == "attacker"):
+            self.attacker = Attacker_Controller()
+        elif(role == "defender"):
+            self.defender = Defender_Controller()
 
 
     def wow(self):
@@ -105,12 +110,15 @@ class Controller:
                 #TODO Planning code
                 # Find appropriate action
                 self.planner.update_world(model_positions)
-                attacker_actions = self.planner.plan('attacker')
-                defender_actions = self.planner.plan('defender')
+                
+                attacker_actions = {'catcher': 0, 'left_motor': 0, 'speed': 0, 'kicker': 0, 'right_motor': 0}
+                defender_actions = {'catcher': 0, 'left_motor': 0, 'speed': 0, 'kicker': 0, 'right_motor': 0}
 
                 if self.attacker is not None:
+                    attacker_actions = self.planner.plan('attacker')
                     self.attacker.execute(self.arduino, attacker_actions)
                 if self.defender is not None:
+                    defender_actions = self.planner.plan('defender')
                     self.defender.execute(self.arduino, defender_actions)
 
                 # Information about the grabbers from the world
@@ -306,6 +314,7 @@ if __name__ == '__main__':
     parser.add_argument("pitch", help="[0] Main pitch, [1] Secondary pitch")
     parser.add_argument("side", help="The side of our defender ['left', 'right'] allowed.")
     parser.add_argument("color", help="The color of our team - ['yellow', 'blue'] allowed.")
+    parser.add_argument("role", help="The role of the robot - ['attacker', 'defender'] allowed.")
     #store_true translates -n or --nocomms to True value for comms argument
     parser.add_argument(
         "-n", "--nocomms", help="Disables sending commands to the robot.", action="store_true")
@@ -314,7 +323,7 @@ if __name__ == '__main__':
     #Based on nocomms value ( -n / --nocomms) turns off or on the communications for arduino
     if args.nocomms:
         c = Controller(
-            pitch=int(args.pitch), color=args.color, our_side=args.side, comms=0).wow()
+            pitch=int(args.pitch), color=args.color, our_side=args.side, comms=0, role=args.role).wow()
     else:
         c = Controller(
-            pitch=int(args.pitch), color=args.color, our_side=args.side).wow()
+            pitch=int(args.pitch), color=args.color, our_side=args.side, role=args.role).wow()
