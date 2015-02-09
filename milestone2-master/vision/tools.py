@@ -74,6 +74,15 @@ def get_colors(pitch=0, filename=PATH+'/calibrations/calibrations.json'):
     #to use default which will not be overriden
     #current = json_content['default'][pitch_name]
 
+    #Check if any of the max values is equal to 0 if so use default values instead, this can signal an error happening
+    for key in current:
+        key_dict = current[key]
+        if 'max' in key_dict:
+            if ((key_dict['max'][0] == 0) or (key_dict['max'][1] == 0) or (key_dict['max'][2] == 0)):
+                current = json_content['default'][pitch_name]
+                break
+        
+
 
     # convert mins and maxes into np.array
     for key in current:
