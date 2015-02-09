@@ -38,3 +38,6 @@ local.properties
 
 #pycharm .idea
 .idea
+
+# compiled python files
+*.pyc
