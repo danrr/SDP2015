@@ -258,8 +258,23 @@ void moveForward(byte power) {
 
 void moveBackward(byte power) {
   //check compass and do things
-  motorForward(_LEFT_DRIVE, power); 
-  motorBackward(_RIGHT_DRIVE, power);
+  int headingDiff = getHeadingDiff(targetHeading, getCurrentHeading());
+  Serial.write(abs(headingDiff) / 2);
+  if (headingDiff > (_HEADING_TOLERANCE)) {
+    // turn left....
+    Serial.write(0xFF);
+    motorForward(_LEFT_DRIVE, power - abs(headingDiff) * _HEADING_CORRECTION_COEFFICIENT);
+    motorBackward(_RIGHT_DRIVE, power);
+  } else if (headingDiff < -(_HEADING_TOLERANCE)) {
+    // turn right..
+    Serial.write(0xFE);
+    motorForward(_LEFT_DRIVE, power);
+    motorBackward(_RIGHT_DRIVE, power - abs(headingDiff) * _HEADING_CORRECTION_COEFFICIENT);
+  } else {
+    motorForward(_LEFT_DRIVE, power); 
+    motorBackward(_RIGHT_DRIVE, power);
+  }
+  commands[0].millis += 100;
 }
 
 void driveMotorStop(byte data) {
