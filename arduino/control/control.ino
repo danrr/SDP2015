@@ -15,7 +15,7 @@
 byte cmd, data, response;
 Servo kicker;
 unsigned long current_millis;
-int targetHeading;
+int targetHeading, headingDiff;
 
 /* Assign a unique ID to the sensors */
 
@@ -48,16 +48,16 @@ Command commands[7];
 #define _GET_HEADING 'U'
 #define _TURN_LEFT 'A'
 #define _TURN_RIGHT 'D'
-#define _TURN_TO 'O'
 
 #define _LEFT_DRIVE 2
 #define _RIGHT_DRIVE 4
-#define BACK_DRIVE 3
-#define LEFT_GRABBER 1
-#define RIGHT_GRABBER 5
+#define _BACK_DRIVE 3
+#define _LEFT_GRABBER 1
+#define _RIGHT_GRABBER 5
 
 #define _HEADING_TOLERANCE 1
 #define _HEADING_CORRECTION_COEFFICIENT 0.5
+#define _TURN_DELAY 50
 
 
 /*
@@ -73,8 +73,8 @@ void setup() {
   initSensors();
   
   // initialise kick functions as they're constant
-  commands[1].functionPtr = &liftKicker;
-  commands[2].functionPtr = &doKick;
+  commands[1].functionPtr = &doKick;
+  commands[2].functionPtr = &lowerKicker;
   commands[3].functionPtr = &resetKicker;
 }
 
@@ -131,6 +131,7 @@ void fetchCommand() {
 */
 
 void decodeCommand() {
+  int deltaAngle;    
   switch(cmd) {
     // movement commands
     case _FORWARD:
@@ -138,25 +139,47 @@ void decodeCommand() {
       commands[0].functionPtr = &moveForward;
       commands[0].data = data;
       targetHeading = getCurrentHeading();
-      break; 
+      break;
+
     case _BACKWARD:
       commands[0].millis = millis();
       commands[0].functionPtr = &moveBackward;
       commands[0].data = data;
       targetHeading = getCurrentHeading();
-      break; 
+      break;
+
     case _STOP:
       commands[0].millis = millis();
       commands[0].functionPtr = &driveMotorStop;
       commands[0].data = data;
       break;
 
-    // kick commands  
+    case _TURN_LEFT:
+      commands[0].millis = millis();
+      commands[0].functionPtr = &turnLeft;
+      deltaAngle = (int)data * 2;
+      targetHeading = (getCurrentHeading()  + deltaAngle) % 360;
+      commands[0].data = getHeadingTolerance(getCurrentHeading(), targetHeading);
+      break;
+
+    case _TURN_RIGHT:
+      commands[0].millis = millis();
+      commands[0].functionPtr = &turnRight;
+      deltaAngle = (int)data * 2;
+      targetHeading = (getCurrentHeading()  - deltaAngle) % 360;
+      commands[0].data = getHeadingTolerance(getCurrentHeading(), targetHeading);
+      break;
+
+    // kick commands
     case _KICK:
+      if (data > 100) {
+        data = 100;
+      }
+      kicker.write(90 - 4 * data / 100.0);
       current_millis = millis();
-      commands[1].millis = current_millis;
-      commands[2].millis = current_millis + 200;
-      commands[3].millis = current_millis + 400;
+      commands[1].millis = current_millis + 400;
+      commands[2].millis = current_millis + 800;
+      commands[3].millis = current_millis + 1000;
       commands[1].data = commands[2].data = commands[3].data = data;
       break;
 
@@ -188,16 +211,6 @@ void decodeCommand() {
 
       commands[4].data = commands[5].data = commands[6].data = data;
       break;
-
-     // case _TURN_LEFT:
-     //   turnLeft(data);
-     //   break;
-     // case _TURN_TO:
-     //   turnToHeading(data * 2);
-     //   break;
-     // case _TURN_RIGHT:
-     //   turnRight(data);
-     //   break;
 
     case _HEARTBEAT:
       heartbeat(data);
@@ -236,15 +249,12 @@ void voidCommand(short i) {
 void moveForward(byte power) {
   //check compass and do things
   int headingDiff = getHeadingDiff(targetHeading, getCurrentHeading());
-  Serial.write(abs(headingDiff) / 2);
   if (headingDiff > (_HEADING_TOLERANCE)) {
     // turn left....
-    Serial.write(0xFF);
     motorBackward(_LEFT_DRIVE, power - abs(headingDiff) * _HEADING_CORRECTION_COEFFICIENT);
     motorForward(_RIGHT_DRIVE, power);
   } else if (headingDiff < -(_HEADING_TOLERANCE)) {
     // turn right..
-    Serial.write(0xFE);
     motorBackward(_LEFT_DRIVE, power);
     motorForward(_RIGHT_DRIVE, power - abs(headingDiff) * _HEADING_CORRECTION_COEFFICIENT);
   } else {
@@ -253,21 +263,16 @@ void moveForward(byte power) {
   }
   commands[0].millis += 100;
 }
-   
- 
 
 void moveBackward(byte power) {
   //check compass and do things
   int headingDiff = getHeadingDiff(targetHeading, getCurrentHeading());
-  Serial.write(abs(headingDiff) / 2);
   if (headingDiff > (_HEADING_TOLERANCE)) {
     // turn left....
-    Serial.write(0xFF);
     motorForward(_LEFT_DRIVE, power - abs(headingDiff) * _HEADING_CORRECTION_COEFFICIENT);
     motorBackward(_RIGHT_DRIVE, power);
   } else if (headingDiff < -(_HEADING_TOLERANCE)) {
     // turn right..
-    Serial.write(0xFE);
     motorForward(_LEFT_DRIVE, power);
     motorBackward(_RIGHT_DRIVE, power - abs(headingDiff) * _HEADING_CORRECTION_COEFFICIENT);
   } else {
@@ -280,60 +285,114 @@ void moveBackward(byte power) {
 void driveMotorStop(byte data) {
   motorStop(_LEFT_DRIVE);
   motorStop(_RIGHT_DRIVE);
+  motorStop(_BACK_DRIVE);
   voidCommand(0);
 }
 
-// void turnLeft(byte power) {
-//    motorForward(_LEFT_DRIVE, power);
-//    motorForward(_RIGHT_DRIVE, power);
-//  }
+
+void turnLeft(byte tolerance) {
+  //check compass and do things
+  headingDiff = getHeadingDiff(targetHeading, getCurrentHeading());
+  if (headingDiff < 0) {
+    headingDiff = 360 + headingDiff;
+  }
+  if (headingDiff < tolerance) {
+    motorStop(_LEFT_DRIVE);
+    motorStop(_RIGHT_DRIVE);
+    commands[0].functionPtr = &correctTurnError;
+    commands[0].millis = millis() + _TURN_DELAY;
+  }
+  else {
+    byte power = getTurnSpeed(headingDiff);
+    motorForward(_LEFT_DRIVE, power);
+    motorForward(_RIGHT_DRIVE, power);
+    commands[0].millis = millis() + _TURN_DELAY;
+  }
+
+}  
  
-// void turnRight(byte power) {
-//    motorBackward(_LEFT_DRIVE, power);
-//    motorBackward(_RIGHT_DRIVE, power);
-//  }
+void turnRight(byte tolerance) {
+  //check compass and do things
+  headingDiff = -getHeadingDiff(targetHeading, getCurrentHeading());
+  if (headingDiff < 0) {
+    headingDiff = 360 + headingDiff;
+  }
+  if (headingDiff < tolerance) {
+    motorStop(_LEFT_DRIVE);
+    motorStop(_RIGHT_DRIVE);
+    commands[0].functionPtr = &correctTurnError;
+    commands[0].millis = millis() + _TURN_DELAY;
+  }
+  else {
+    byte power = getTurnSpeed(headingDiff);
+    motorBackward(_LEFT_DRIVE, power);
+    motorBackward(_RIGHT_DRIVE, power);
+    commands[0].millis = millis() + _TURN_DELAY;
+  }
+ }
+
+ void correctTurnError(byte data) {
+  int heading = getCurrentHeading();
+  int tolerance;
+  headingDiff = getHeadingDiff(targetHeading, heading);
+  tolerance = getHeadingTolerance(targetHeading, heading);
+  Serial.write(headingDiff > tolerance);
+  Serial.write(headingDiff < -tolerance);
+  if (headingDiff > tolerance) {
+    commands[0].functionPtr = &turnLeft;
+    commands[0].millis = millis();
+    commands[0].data = tolerance;
+  }
+  else if (headingDiff < -tolerance) {
+    commands[0].functionPtr = &turnRight;
+    commands[0].millis = millis();
+    commands[0].data = tolerance;
+  }
+  else {
+    voidCommand(0);
+  }
+ }
 
 //grabber commands
 void startOpenGrabber(byte data) {
-  motorForward(RIGHT_GRABBER, 100);
-  motorBackward(LEFT_GRABBER, 100);
+  motorForward(_RIGHT_GRABBER, 100);
+  motorBackward(_LEFT_GRABBER, 100);
   voidCommand(4);
 }
 
 void slowOpenGrabber(byte data) {
-  motorForward(RIGHT_GRABBER, 50);
-  motorBackward(LEFT_GRABBER, 50);
+  motorForward(_RIGHT_GRABBER, 50);
+  motorBackward(_LEFT_GRABBER, 50);
   voidCommand(5);
 }
 
 void startCloseGrabber(byte data) {
-  motorForward(LEFT_GRABBER, 100);
-  motorBackward(RIGHT_GRABBER, 100);
+  motorForward(_LEFT_GRABBER, 100);
+  motorBackward(_RIGHT_GRABBER, 100);
   voidCommand(4);
 }
 
 void slowCloseGrabber(byte data) {
-  motorForward(LEFT_GRABBER, 50);
-  motorBackward(RIGHT_GRABBER, 50);
+  motorForward(_LEFT_GRABBER, 50);
+  motorBackward(_RIGHT_GRABBER, 50);
   voidCommand(5);
 }
 
 void stopGrabber(byte data) {
-  motorStop(LEFT_GRABBER);
-  motorStop(RIGHT_GRABBER);
+  motorStop(_LEFT_GRABBER);
+  motorStop(_RIGHT_GRABBER);
   voidCommand(6);
 }
 
 //kicker commands
-void liftKicker(byte power) {
-  float relativePower = (power/100.0);
-  kicker.write(90 - (7 * relativePower));
+
+void doKick(byte power) {
+  kicker.write(90 + 20 * power / 100.0);
   voidCommand(1);
 }
 
-void doKick(byte power) {
-  float relativePower = (power/100.0);   
-  kicker.write(90 + (30 * relativePower));
+void lowerKicker(byte power) {
+  kicker.write(90 + 10 * power / 100.0);
   voidCommand(2);
 }
 
@@ -352,22 +411,6 @@ void heartbeat(byte _data) {
   response = _data;
 }
 
-/* Initialises the IMU sensors. Taken (mostly) verbatim from the example program. */
-
-
-
-// void turnToHeading(short heading) {
-//   cmd = 0x00;
-//   short currentHeading;
-//   short diffHeading;
-//   do {
-//     currentHeading = getMagOrientation();
-//     diffHeading = currentHeading - heading;
-//     turnLeft((diffHeading / 2) + 20);
-//   } while (abs(diffHeading) > 5);
-//   motorAllStop();
-// }
-
 void returnHeading() {
   response = (byte) (getCurrentHeading() / 2); 
 }
@@ -385,7 +428,7 @@ void returnHeading() {
 
 int getHeadingDiff(int targetHeading, int currentHeading) {
   int diff = (targetHeading - currentHeading + 360) % 360;
-  if (diff > 180) {
+  if (diff >= 180) {
     return -360 + diff;
   }
   return diff;
@@ -404,6 +447,15 @@ int getCurrentHeading() {
   }
 }
 
+byte getTurnSpeed(int headingDiff) {
+  return 40;
+} 
+
+byte getHeadingTolerance(int currentHeading, int targetHeading) {
+  int deltaAngle;
+  deltaAngle = getHeadingDiff(targetHeading, currentHeading);
+  return 5 + abs(deltaAngle)/5;
+}
 // short getGyroOrientation() {
 //   sensors_event_t event; 
 //   gyro.getEvent(&event);
