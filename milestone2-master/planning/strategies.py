@@ -471,7 +471,14 @@ class AttackerGrab(Strategy):
             return do_nothing()
         else:
             self.our_attacker.catcher = 'closed'
-            return grab_ball()
+            # the angle by which the robot needs to rotate in order to achieve alignment with the ball
+            angle = self.our_attacker.get_rotation_to_point(self.ball.x, self.ball.y)
+            if angle > 0:
+                return grab_ball_left()
+            elif angle < 0: 
+                return grab_ball_right()
+            elif angle == 0: 
+                return grab_ball_center()
 
 
 class DefenderGrab(Strategy):
@@ -522,7 +529,14 @@ class DefenderGrab(Strategy):
             return do_nothing()
         else:
             self.our_defender.catcher = 'closed'
-            return grab_ball()
+            # the angle by which the robot needs to rotate in order to achieve alignment with the ball            
+            angle = self.our_defender.get_rotation_to_point(self.ball.x, self.ball.y)
+            if angle > 0:
+                return grab_ball_left()
+            elif angle < 0: 
+                return grab_ball_right()
+            elif angle == 0: 
+                return grab_ball_center()
 
 
 class AttackerScoreDynamic(Strategy):

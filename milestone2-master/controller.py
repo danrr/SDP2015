@@ -111,8 +111,8 @@ class Controller:
                 # Find appropriate action
                 self.planner.update_world(model_positions)
                 
-                attacker_actions = {'catcher': 0, 'left_motor': 0, 'speed': 0, 'kicker': 0, 'right_motor': 0}
-                defender_actions = {'catcher': 0, 'left_motor': 0, 'speed': 0, 'kicker': 0, 'right_motor': 0}
+                attacker_actions = {'move': 0, 'strafe': 0, 'angle': 0, 'grabber' : -1, 'kick':0}
+                defender_actions = {'move': 0, 'strafe': 0, 'angle': 0, 'grabber' : -1, 'kick':0}
 
                 if self.attacker is not None:
                     attacker_actions = self.planner.plan('attacker')
@@ -159,6 +159,7 @@ class Controller:
                 self.attacker.shutdown(self.arduino)
             if self.defender is not None:
                 self.defender.shutdown(self.arduino)
+
                 
 class Robot_Controller(object):
     """
@@ -173,7 +174,7 @@ class Robot_Controller(object):
 
     def shutdown(self, comm):
         # TO DO
-            pass
+        pass
 
 
 class Defender_Controller(Robot_Controller):
@@ -192,34 +193,69 @@ class Defender_Controller(Robot_Controller):
         Execute robot action.
         """
 
-        if 'turn_90' in action:
-            comm.write('D_RUN_ENGINE %d %d\n' % (0, 0))
+        #Sends move forward
+        if action["move"]> 0:
+            print("Move forward")
+            comm.send('W',action['move'])
+
+        #Sends move backward
+        elif action['move']<0:
+            print("Move Backward")
+            comm.send('S',abs(action['move']))
+
+        #sends strafe right
+        elif action['strafe']>0:
+            print("Strafe right")
+            comm.send(4, action['strafe'])
+
+        #sends strafe left
+        elif action['strafe']<0:
+            print("Strafe left")
+            comm.send(2, abs(action['strafe']))
+
+        #sends turn right by a certain angle
+        elif action['angle']>0:
+            print("Turn right by " + str(action['angle']))
+            comm.send('D',action['angle'])
+
+        #sends turn left by a certain angle
+        elif action['angle']<0:
+            print("Turn left by " + str(action['angle']))
+            comm.send('A',abs(action['angle']))
+
+        #sends close both grabbers at the same time
+        elif action['grabber']== 0 :
+            print("Close both grabbers at once")
+            comm.send('X',(action['grabber']))
             time.sleep(0.2)
-            comm.write('D_RUN_SHOOT %d\n' % int(action['turn_90']))
-            time.sleep(2.2)
 
-        #print action
-        left_motor = int(action['left_motor'])
-        right_motor = int(action['right_motor'])
-        speed = action['speed']
+        #sends close right grabber first
+        elif action['grabber']== 1:
+            print("Close left grabber first")
+            comm.send(5,0)
+            time.sleep(0.2)
+            comm.send(1,0)
 
-        comm.write('D_SET_ENGINE %d %d\n' % (speed, speed))
-        comm.write('D_RUN_ENGINE %d %d\n' % (left_motor, right_motor))
-        if action['kicker'] != 0:
-            try:
-                comm.write('D_RUN_KICK\n')
-                time.sleep(0.5)
-            except StandardError:
-                pass
-        elif action['catcher'] != 0:
-            try:
-                comm.write('D_RUN_CATCH\n')
-            except StandardError:
-                pass
+        #sends close left grabber first
+        elif action['grabber']== 2:
+            print("Close left grabber first")
+            comm.send(1,0)
+            time.sleep(0.2)
+            comm.send(5,0)
 
-    def shutdown(self, comm):
-        comm.write('D_RUN_KICK\n')
-        comm.write('D_RUN_ENGINE %d %d\n' % (0, 0))
+        #sends open grabber
+        elif action['grabber']== 3:
+            print("open grabber")
+            comm.send('Z',0)
+
+        #sends the kick command
+        elif action['kick']>0:
+            print("kick")
+            comm.send('Q', action['kick'])
+
+        else:
+            comm.send(' ',0)
+
 
 
 class Attacker_Controller(Robot_Controller):
@@ -237,33 +273,68 @@ class Attacker_Controller(Robot_Controller):
         """
         Execute robot action.
         """
-        if 'turn_90' in action:
-            comm.write('A_RUN_ENGINE %d %d\n' % (0, 0))
+        #Sends move forward
+        if action["move"]> 0:
+            print("Move forward")
+            comm.send('W',action['move'])
+
+        #Sends move backward
+        elif action['move']<0:
+            print("Move Backward")
+            comm.send('S',abs(action['move']))
+
+        #sends strafe right
+        elif action['strafe']>0:
+            print("Strafe right")
+            comm.send(4, action['strafe'])
+
+        #sends strafe left
+        elif action['strafe']<0:
+            print("Strafe left")
+            comm.send(2, abs(action['strafe']))
+
+        #sends turn right by a certain angle
+        elif action['angle']>0:
+            print("Turn right by " + action['angle'])
+            comm.send('D',action['angle'])
+
+        #sends turn left by a certain angle
+        elif action['angle']<0:
+            print("Turn left by " + action['angle'])
+            comm.send('A',abs(action['angle']))
+
+        #sends close both grabbers at the same time
+        elif action['grabber']== 0 :
+            print("Close both grabbers at once")
+            comm.send('X',(action['grabber']))
             time.sleep(0.2)
-            comm.write('A_RUN_SHOOT %d\n' % int(action['turn_90']))
-            # time.sleep(1.2)
+
+        #sends close right grabber first
+        elif action['grabber']== 1:
+            print("Close left grabber first")
+            comm.send(5,0)
+            time.sleep(0.2)
+            comm.send(1,0)
+
+        #sends close left grabber first
+        elif action['grabber']== 2:
+            print("Close left grabber first")
+            comm.send(1,0)
+            time.sleep(0.2)
+            comm.send(5,0)
+
+        #sends open grabber
+        elif action['grabber']== 3:
+            print("open grabber")
+            comm.send('Z',0)
+
+        #sends the kick command
+        elif action['kick']>0:
+            print("kick")
+            comm.send('Q', action['kick'])
+
         else:
-            left_motor = int(action['left_motor'])
-            right_motor = int(action['right_motor'])
-            speed = int(action['speed'])
-            comm.write('A_SET_ENGINE %d %d\n' % (speed, speed))
-            comm.write('A_RUN_ENGINE %d %d\n' % (left_motor, right_motor))
-            if action['kicker'] != 0:
-                try:
-                    comm.write('A_RUN_KICK\n')
-                except StandardError:
-                    pass
-            elif action['catcher'] != 0:
-                try:
-                    comm.write('A_RUN_CATCH\n')
-                except StandardError:
-                    pass
-
-    def shutdown(self, comm):
-        comm.write('A_RUN_KICK\n')
-        comm.write('A_RUN_ENGINE %d %d\n' % (0, 0))
-
-
+            comm.send(' ',0)
 
 
 
@@ -301,9 +372,10 @@ class Arduino:
             self.write('D_RUN_ENGINE %d %d\n' % (0, 0))
             self.comms = 0
 
-    def write(self, string):
+    def send(self, string, data):
         if self.comms == 1:
-            self.serial.write(string)
+            print ("Sending message to Arduino: " + string + data)
+            self.serial.write(string+data)
 
 
 if __name__ == '__main__':

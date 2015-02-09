@@ -85,20 +85,25 @@ def predict_y_intersection(world, predict_for_x, robot, full_width=False, bounce
             return None
 
 
-def grab_ball():
-    return {'left_motor': 0, 'right_motor': 0, 'kicker': 0, 'catcher': 1, 'speed': 1000}
+def grab_ball_center():
+    return {'move': 0, 'strafe': 0, 'angle': 0, 'grabber' : 0, 'kick':0}
 
+def grab_ball_right():
+    return {'move': 0, 'strafe': 0, 'angle': 0, 'grabber' : 1, 'kick':0}
 
-def kick_ball():
-    return {'left_motor': 0, 'right_motor': 0, 'kicker': 1, 'catcher': 0, 'speed': 1000}
+def grab_ball_left():
+    return {'move': 0, 'strafe': 0, 'angle': 0, 'grabber' : 2, 'kick':0}
+
+def kick_ball(power):
+    return {'move': 0, 'strafe': 0, 'angle': 0, 'grabber' : -1, 'kick':power}
 
 
 def open_catcher():
-    return {'left_motor': 0, 'right_motor': 0, 'kicker': 1, 'catcher': 0, 'speed': 1000}
+    return {'move': 0, 'strafe': 0, 'angle': 0, 'grabber' : 3, 'kick':0}
 
 
-def turn_shoot(orientation):
-    return {'turn_90': orientation, 'left_motor': 0, 'right_motor': 0, 'kicker': 1, 'catcher': 0, 'speed': 1000}
+def turn_shoot(orientation, power):
+    return {'move': 0, 'strafe': 0, 'angle': orientation, 'grabber' : -1, 'kick':power}
 
 
 def has_matched(robot, x=None, y=None, angle=None,
@@ -112,12 +117,12 @@ def has_matched(robot, x=None, y=None, angle=None,
     return dist_matched and angle_matched
 
 
-def calculate_motor_speed(displacement, angle, backwards_ok=False, careful=False):
+def calculate_motor_speed(displacement, angle, strafe=False, backwards_ok=False, careful=False):
     '''
     Simplistic view of calculating the speed: no modes or trying to be careful
     '''
     moving_backwards = False
-    general_speed = 95 if careful else 300
+    general_speed = 33 if careful else 100
     angle_thresh = BALL_ANGLE_THRESHOLD if careful else ANGLE_MATCH_THRESHOLD
 
     if backwards_ok and abs(angle) > pi/2:
@@ -127,29 +132,33 @@ def calculate_motor_speed(displacement, angle, backwards_ok=False, careful=False
     if not (displacement is None):
 
         if displacement < DISTANCE_MATCH_THRESHOLD:
-            return {'left_motor': 0, 'right_motor': 0, 'kicker': 0, 'catcher': 0, 'speed': general_speed}
+            return {'move': 0, 'strafe': 0, 'angle': 0, 'grabber' : -1, 'kick':0}
 
         elif abs(angle) > angle_thresh:
-            speed = (angle/pi) * MAX_ANGLE_SPEED
-            return {'left_motor': -speed, 'right_motor': speed, 'kicker': 0, 'catcher': 0, 'speed': general_speed}
+            angle = ((angle/pi) * MAX_ANGLE_SPEED * 180)/2
+            return {'move': 0, 'strafe': 0, 'angle': angle, 'grabber' : -1, 'kick':0}
 
         else:
             speed = log(displacement, 10) * MAX_DISPLACEMENT_SPEED
             speed = -speed if moving_backwards else speed
             # print 'DISP:', displacement
             if careful:
-                return {'left_motor': speed, 'right_motor': speed, 'kicker': 0, 'catcher': 0, 'speed': 1000/(1+10**(-0.1*(displacement-85)))}
-            return {'left_motor': speed, 'right_motor': speed, 'kicker': 0, 'catcher': 0, 'speed': 1000/(1+10**(-0.1*(displacement-30)))}
+                if not strafe:
+                    return {'move': speed/4, 'strafe': 0, 'angle': 0, 'grabber' : -1, 'kick':0}
+                else: return {'move': 0, 'strafe': speed/4, 'angle': 0, 'grabber' : -1, 'kick':0}
+            elif not strafe:
+                return {'move': speed, 'strafe': 0, 'angle': 0, 'grabber' : -1, 'kick':0}
+            else:
+                return {'move': 0, 'strafe': speed, 'angle': 0, 'grabber' : -1, 'kick':0}
 
     else:
 
         if abs(angle) > angle_thresh:
-            speed = (angle/pi) * MAX_ANGLE_SPEED
-            return {'left_motor': -speed, 'right_motor': speed, 'kicker': 0, 'catcher': 0, 'speed': general_speed}
+            angle = (angle/pi) * MAX_ANGLE_SPEED * 180
+            return {'move': 0, 'strafe': 0, 'angle': angle, 'grabber' : -1, 'kick':0}
 
         else:
-            return {'left_motor': 0, 'right_motor': 0, 'kicker': 0, 'catcher': 0, 'speed': general_speed}
-
+            return {'move': 0, 'strafe': 0, 'angle': 0, 'grabber' : -1, 'kick':0}
 
 
 def do_nothing():

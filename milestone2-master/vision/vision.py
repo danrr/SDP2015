@@ -518,14 +518,15 @@ class GUI(object):
         self.draw_text(frame, dState[1], x_main(2)+x_offset, y_offset + 30, size=0.6)
 
     def draw_actions(self, frame, action, x, y):
+        # Modified to match the new dictionary created by Jon
         self.draw_text(
-            frame, "Left Motor: " + str(action['left_motor']), x, y+5, color=BGR_COMMON['white'])
+            frame, "Move: " + str(action['move']), x, y+5, color=BGR_COMMON['white'])
         self.draw_text(
-            frame, "Right Motor: " + str(action['right_motor']), x, y+15, color=BGR_COMMON['white'])
+            frame, "Strafe: " + str(action['strafe']), x, y+15, color=BGR_COMMON['white'])
         self.draw_text(
-            frame, "Speed: " + str(action['speed']), x, y + 25, color=BGR_COMMON['white'])
-        self.draw_text(frame, "Kicker: " + str(action['kicker']), x, y + 35, color=BGR_COMMON['white'])
-        self.draw_text(frame, "Catcher: " + str(action['catcher']), x, y + 45, color=BGR_COMMON['white'])
+            frame, "Angle: " + str(action['angle']), x, y + 25, color=BGR_COMMON['white'])
+        self.draw_text(frame, "Kick: " + str(action['kick']), x, y + 35, color=BGR_COMMON['white'])
+        self.draw_text(frame, "Grabber: " + str(action['grabber']), x, y + 45, color=BGR_COMMON['white'])
 
 
 if __name__ == '__main__':
