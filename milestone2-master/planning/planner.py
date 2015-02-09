@@ -111,7 +111,6 @@ class Planner:
                 return self._defender_current_strategy.generate()
             # Otherwise, chillax:
             else:
-                print "[DEFENDER]: do nothing"
                 return do_nothing()
 
         else:

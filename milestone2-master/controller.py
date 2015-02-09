@@ -17,7 +17,7 @@ class Controller:
     Primary source of robot control. Ties vision and planning together.
     """
 
-    def __init__(self, pitch, color, our_side, video_port=0, comm_port='/dev/ttyUSB0', comms=1, role="defender"):
+    def __init__(self, pitch, color, our_side, video_port=0, comm_port='/dev/ttyACM0', comms=1, role="defender"):
         """
         Entry point for the SDP system.
 
@@ -359,6 +359,8 @@ class Arduino:
             if self.serial is None:
                 try:
                     self.serial = serial.Serial(self.port, self.rate, timeout=self.timeout)
+                    self.heartBeat()
+                    self.comms = 0
                 except:
                     print ("No Arduino detected!")
                     print ("Continuing without comms.")
@@ -376,6 +378,20 @@ class Arduino:
         if self.comms == 1:
             print ("Sending message to Arduino: " + string + data)
             self.serial.write(string+data)
+
+    def heartBeat(self):
+        #TODO refactor this method, waiting for response from heartbeat
+        bits_toSend = "X"
+        self.write("L"+bits_toSend)
+        time.sleep(0.3)
+        bits_waiting = self.serial.inWaiting()
+        if (bits_waiting):
+            if (self.serial.read() == bits_toSend):
+                print ("Communication estabilished - correct response")
+            else:
+                print ("Communication estabilished - incorrect response")
+        else:
+            print ("Communication not established")
 
 
 if __name__ == '__main__':
