@@ -1,4 +1,5 @@
 from vision.vision import Vision, Camera, GUI
+from planning.planner import Planner
 from postprocessing.postprocessing import Postprocessing
 from preprocessing.preprocessing import Preprocessing
 import vision.tools as tools
@@ -61,6 +62,9 @@ class Controller:
         # Set up postprocessing for vision
         self.postprocessing = Postprocessing()
 
+        # Set up main planner
+        self.planner = Planner(our_side=our_side, pitch_num=self.pitch)
+
         # Set up GUI
         self.GUI = GUI(calibration=self.calibration, arduino=self.arduino, pitch=self.pitch)
 
@@ -69,6 +73,10 @@ class Controller:
 
         self.preprocessing = Preprocessing()
 
+        #Planning code
+        self.attacker = Attacker_Controller()
+        self.defender = Defender_Controller()
+
 
     def wow(self):
         """
@@ -76,56 +84,177 @@ class Controller:
         """
         counter = 1L
         timer = time.clock()
-	
-	try:
-		c = True
-		while c != 27:  # the ESC key
 
-		    frame = self.camera.get_frame()
-		    pre_options = self.preprocessing.options
-		    # Apply preprocessing methods toggled in the UI
-		    preprocessed = self.preprocessing.run(frame, pre_options)
-		    frame = preprocessed['frame']
-		    if 'background_sub' in preprocessed:
-		        cv2.imshow('bg sub', preprocessed['background_sub'])
-		    # Find object positions
-		    # model_positions have their y coordinate inverted
+        try:
+            c = True
+            while c != 27:  # the ESC key
 
-		    model_positions, regular_positions = self.vision.locate(frame)
-		    model_positions = self.postprocessing.analyze(model_positions)
+                frame = self.camera.get_frame()
+                pre_options = self.preprocessing.options
+                # Apply preprocessing methods toggled in the UI
+                preprocessed = self.preprocessing.run(frame, pre_options)
+                frame = preprocessed['frame']
+                if 'background_sub' in preprocessed:
+                    cv2.imshow('bg sub', preprocessed['background_sub'])
+                # Find object positions
+                # model_positions have their y coordinate inverted
 
-		    #TODO modified from original
-		    attacker_actions = {'catcher': 0, 'left_motor': 0, 'speed': 0, 'kicker': 0, 'right_motor': 0}
-		    defender_actions = {'catcher': 0, 'left_motor': 0, 'speed': 0, 'kicker': 0, 'right_motor': 0}
+                model_positions, regular_positions = self.vision.locate(frame)
+                model_positions = self.postprocessing.analyze(model_positions)
 
+                #TODO Planning code
+                # Find appropriate action
+                self.planner.update_world(model_positions)
+                attacker_actions = self.planner.plan('attacker')
+                defender_actions = self.planner.plan('defender')
 
-		    #TODO modified from original
-		    # Information about the grabbers from the world
-		    grabbers = None
+                if self.attacker is not None:
+                    self.attacker.execute(self.arduino, attacker_actions)
+                if self.defender is not None:
+                    self.defender.execute(self.arduino, defender_actions)
 
-		    #TODO modified from original
-		    # Information about states
-		    attackerState = ("","")
-		    defenderState = ("","")
+                # Information about the grabbers from the world
+                grabbers = {
+                    'our_defender': self.planner._world.our_defender.catcher_area,
+                    'our_attacker': self.planner._world.our_attacker.catcher_area
+                }
 
-		    # Use 'y', 'b', 'r' to change color.
-		    c = waitKey(2) & 0xFF
-		    actions = []
-		    fps = float(counter) / (time.clock() - timer)
-		    # Draw vision content and actions
+                # Information about states
+                attackerState = (self.planner.attacker_state, self.planner.attacker_strat_state)
+                defenderState = (self.planner.defender_state, self.planner.defender_strat_state)
+                #TODO End of planning
+                # Use 'y', 'b', 'r' to change color.
+                c = waitKey(2) & 0xFF
+                actions = []
+                fps = float(counter) / (time.clock() - timer)
+                # Draw vision content and actions
 
-		    self.GUI.draw(
-		        frame, model_positions, actions, regular_positions, fps, attackerState,
-		        defenderState, attacker_actions, defender_actions, grabbers,
-		        our_color=self.color, our_side=self.side, key=c, preprocess=pre_options)
-		    counter += 1
+                self.GUI.draw(
+                    frame, model_positions, actions, regular_positions, fps, attackerState,
+                    defenderState, attacker_actions, defender_actions, grabbers,
+                    our_color=self.color, our_side=self.side, key=c, preprocess=pre_options)
+                counter += 1
 
-	except:
+        except:
+            #TODO Planning code
+            if self.defender is not None:
+                self.defender.shutdown(self.arduino)
+            if self.attacker is not None:
+                self.attacker.shutdown(self.arduino)
             raise
 
         finally:
             # Write the new calibrations to a file.
             tools.save_colors(self.pitch, self.calibration)
+            #TODO Planning code
+            if self.attacker is not None:
+                self.attacker.shutdown(self.arduino)
+            if self.defender is not None:
+                self.defender.shutdown(self.arduino)
+
+class Robot_Controller(object):
+    """
+    Robot_Controller superclass for robot control.
+    """
+
+def __init__(self):
+    """
+    Connect to Brick and setup Motors/Sensors.
+    """
+    self.current_speed = 0
+
+def shutdown(self, comm):
+    # TO DO
+    pass
+
+
+class Defender_Controller(Robot_Controller):
+    """
+    Defender implementation.
+    """
+
+    def __init__(self):
+        """
+        Do the same setup as the Robot class, as well as anything specific to the Defender.
+        """
+        super(Defender_Controller, self).__init__()
+
+    def execute(self, comm, action):
+        """
+        Execute robot action.
+        """
+
+        if 'turn_90' in action:
+            comm.write('D_RUN_ENGINE %d %d\n' % (0, 0))
+            time.sleep(0.2)
+            comm.write('D_RUN_SHOOT %d\n' % int(action['turn_90']))
+            time.sleep(2.2)
+
+        #print action
+        left_motor = int(action['left_motor'])
+        right_motor = int(action['right_motor'])
+        speed = action['speed']
+
+        comm.write('D_SET_ENGINE %d %d\n' % (speed, speed))
+        comm.write('D_RUN_ENGINE %d %d\n' % (left_motor, right_motor))
+        if action['kicker'] != 0:
+            try:
+                comm.write('D_RUN_KICK\n')
+                time.sleep(0.5)
+            except StandardError:
+                pass
+        elif action['catcher'] != 0:
+            try:
+                comm.write('D_RUN_CATCH\n')
+            except StandardError:
+                pass
+
+    def shutdown(self, comm):
+        comm.write('D_RUN_KICK\n')
+        comm.write('D_RUN_ENGINE %d %d\n' % (0, 0))
+
+
+class Attacker_Controller(Robot_Controller):
+    """
+    Attacker implementation.
+    """
+
+    def __init__(self):
+        """
+        Do the same setup as the Robot class, as well as anything specific to the Attacker.
+        """
+        super(Attacker_Controller, self).__init__()
+
+    def execute(self, comm, action):
+        """
+        Execute robot action.
+        """
+        if 'turn_90' in action:
+            comm.write('A_RUN_ENGINE %d %d\n' % (0, 0))
+            time.sleep(0.2)
+            comm.write('A_RUN_SHOOT %d\n' % int(action['turn_90']))
+            # time.sleep(1.2)
+        else:
+            left_motor = int(action['left_motor'])
+            right_motor = int(action['right_motor'])
+            speed = int(action['speed'])
+            comm.write('A_SET_ENGINE %d %d\n' % (speed, speed))
+            comm.write('A_RUN_ENGINE %d %d\n' % (left_motor, right_motor))
+            if action['kicker'] != 0:
+                try:
+                    comm.write('A_RUN_KICK\n')
+                except StandardError:
+                    pass
+            elif action['catcher'] != 0:
+                try:
+                    comm.write('A_RUN_CATCH\n')
+                except StandardError:
+                    pass
+
+    def shutdown(self, comm):
+        comm.write('A_RUN_KICK\n')
+        comm.write('A_RUN_ENGINE %d %d\n' % (0, 0))
+
 
 
 

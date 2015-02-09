@@ -361,6 +361,8 @@ class GUI(object):
             preprocess['background_sub'] = self.cast_binary(
                 cv2.getTrackbarPos(self.BG_SUB, self.VISION))
 
+        if grabbers:
+            self.draw_grabbers(frame, grabbers, frame_height)
 
         #TODO uncomment
         #if grabbers:
