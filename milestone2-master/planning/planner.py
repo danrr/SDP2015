@@ -165,4 +165,4 @@ class Planner:
                 return self._attacker_current_strategy.generate()
             else:
                 print "[ATTACKER]: motor speed on 0"
-                return calculate_motor_speed(0, 0)
+                return move(0, 0)

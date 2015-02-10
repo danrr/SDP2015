@@ -65,13 +65,13 @@ class DefenderPenalty(Strategy):
         if predicted_y is not None:
             displacement, angle = self.our_defender.get_direction_to_point(self.our_defender.x,
                                                                            predicted_y - 7*math.sin(self.our_defender.angle))
-            return calculate_motor_speed(displacement, angle, backwards_ok=True)
+            return move(displacement, angle, strafe_ok=True, backwards_ok=True)
         else:
             y = self.ball.y
             y = max([y, 60])
             y = min([y, self.world._pitch.height - 60])
             displacement, angle = self.our_defender.get_direction_to_point(self.our_defender.x, y)
-            return calculate_motor_speed(displacement, angle, backwards_ok=True)
+            return move(displacement, angle, backwards_ok=True)
 
 
 class DefenderDefence(Strategy):
@@ -109,7 +109,7 @@ class DefenderDefence(Strategy):
         else:
             displacement, angle = self.our_defender.get_direction_to_point(
                 self.goal_front_x, self.our_goal.y)
-            return calculate_motor_speed(displacement, angle, backwards_ok=True)
+            return move(displacement, angle, strafe_ok=True, backwards_ok=True)
 
     def defend_goal(self):
         """
@@ -125,13 +125,13 @@ class DefenderDefence(Strategy):
         if predicted_y is not None:
             displacement, angle = self.our_defender.get_direction_to_point(self.our_defender.x,
                                                                            predicted_y - 7*math.sin(self.our_defender.angle))
-            return calculate_motor_speed(displacement, angle, backwards_ok=True)
+            return move(displacement, angle, strafe_ok=True, backwards_ok=True)
         else:
             y = self.ball.y
             y = max([y, 60])
             y = min([y, self.world._pitch.height - 60])
             displacement, angle = self.our_defender.get_direction_to_point(self.our_defender.x, y)
-            return calculate_motor_speed(displacement, angle, backwards_ok=True)
+            return move(displacement, angle, backwards_ok=True)
 
     def get_alignment_position(self, side):
         """
@@ -177,7 +177,7 @@ class AttackerDefend(Strategy):
         else:
             displacement, angle = self.our_attacker.get_direction_to_point(
                 self.center_x, self.our_attacker.y)
-            return calculate_motor_speed(displacement, angle, backwards_ok=True)
+            return move(displacement, angle, strafe_ok=True, backwards_ok=True)
 
     def block_pass(self):
         predicted_y = predict_y_intersection(self.world, self.our_attacker.x, self.their_defender, full_width=True, bounce=True)
@@ -190,7 +190,7 @@ class AttackerDefend(Strategy):
 
         displacement, angle = self.our_attacker.get_direction_to_point(ideal_x, ideal_y)
         if not has_matched(self.our_attacker, ideal_x, ideal_y):
-            return calculate_motor_speed(displacement, angle, backwards_ok=True)
+            return move(displacement, angle, strafe_ok=True, backwards_ok=True)
         else:
             return do_nothing()
 
@@ -224,7 +224,7 @@ class AttackerCatch(Strategy):
         ideal_y = self.ball.y
 
         displacement, angle = self.our_attacker.get_direction_to_point(ideal_x, ideal_y)
-        return calculate_motor_speed(displacement, angle, backwards_ok=True)
+        return move(displacement, angle, backwards_ok=True)
 
 
 class AttackerPositionCatch(Strategy):
@@ -267,7 +267,7 @@ class AttackerPositionCatch(Strategy):
         else:
             displacement, angle = self.our_attacker.get_direction_to_point(
                 self.center_x, self.center_y)
-            return calculate_motor_speed(displacement, angle, backwards_ok=True)
+            return move(displacement, angle, strafe_ok=True, backwards_ok=True)
 
     def rotate(self):
         '''
@@ -293,7 +293,7 @@ class AttackerPositionCatch(Strategy):
             # required rotation.
             displacement, angle = self.our_attacker.get_direction_to_point(self.our_attacker.x + 10 * math.cos(attacker_angle),
                                                                            self.our_attacker.y + 10 * math.sin(attacker_angle))
-            return calculate_motor_speed(None, angle, careful=True)
+            return move(None, angle, careful=True)
         
         return do_nothing()
 
@@ -346,7 +346,7 @@ class DefenderBouncePass(Strategy):
             self.current_state = self.ROTATE
             return do_nothing()
         else:
-            return calculate_motor_speed(distance, angle, careful=True)
+            return move(distance, angle, strafe_ok= True, careful=True)
 
     def rotate(self):
         """
@@ -378,7 +378,7 @@ class DefenderBouncePass(Strategy):
                 print 'orientation', orientation
                 return turn_shoot(orientation)
         else:
-            return calculate_motor_speed(None, angle, careful=True)
+            return move(None, angle, careful=True)
 
     def shoot(self):
         """
@@ -463,7 +463,7 @@ class AttackerGrab(Strategy):
             self.current_state = self.GRAB_BALL
             return do_nothing()
         else:
-            return calculate_motor_speed(displacement, angle, careful=True)
+            return move(displacement, angle, careful=True)
 
     def grab(self):
         if self.our_attacker.has_ball(self.ball):
@@ -510,7 +510,7 @@ class DefenderGrab(Strategy):
             if predicted_y is not None:
                 displacement, angle = self.our_defender.get_direction_to_point(self.our_defender.x,
                                                                                predicted_y - 7*math.sin(self.our_defender.angle))
-                return calculate_motor_speed(displacement, angle, backwards_ok=True)
+                return move(displacement, angle, strafe_ok=True, backwards_ok=True)
         
         self.current_state = self.GO_TO_BALL
         return do_nothing()
@@ -521,7 +521,7 @@ class DefenderGrab(Strategy):
             self.current_state = self.GRAB_BALL
             return do_nothing()
         else:
-            return calculate_motor_speed(displacement, angle, careful=True)
+            return move(displacement, angle, careful=True)
 
     def grab(self):
         if self.our_defender.has_ball(self.ball):
@@ -627,7 +627,7 @@ class AttackerScoreDynamic(Strategy):
             return self.confuse_one()
 
         # We still need to drive
-        return calculate_motor_speed(distance, angle)
+        return move(distance, angle)
 
     def confuse_one(self):
         """
@@ -660,10 +660,10 @@ class AttackerScoreDynamic(Strategy):
                 self.current_state = self.CONFUSE1
                 return self.confuse_two()
             else:
-                return calculate_motor_speed(0, 0)
+                return move(0, 0)
 
         # Rotate on the spot
-        return calculate_motor_speed(None, angle)
+        return move(None, angle)
 
     def confuse_two(self):
         """
@@ -689,7 +689,7 @@ class AttackerScoreDynamic(Strategy):
             pass
 
         # Rotate on the spot
-        return calculate_motor_speed(None, angle, careful=True)
+        return move(None, angle, careful=True)
 
     def shoot(self):
         """
@@ -807,7 +807,7 @@ class AttackerDriveBy(Strategy):
             self.current_state = self.ALIGN_GOAL
             return do_nothing()
 
-        return calculate_motor_speed(distance, angle)
+        return move(distance, angle)
 
     def align_to_goal(self):
         other_side = self.UP if self.drive_side == self.DOWN else self.DOWN
@@ -825,7 +825,7 @@ class AttackerDriveBy(Strategy):
                 self.current_state = self.SHOOT
             return do_nothing()
 
-        return calculate_motor_speed(None, angle)
+        return move(None, angle)
 
     def shoot(self):
         self.current_state = self.FINISHED
@@ -921,7 +921,7 @@ class AttackerDriveByTurn(Strategy):
         else:
             displacement, angle = self.our_attacker.get_direction_to_point(
                 self._get_zone_center_x(), self.our_attacker.y)
-            return calculate_motor_speed(displacement, angle, backwards_ok=True, careful=True)
+            return move(displacement, angle, strafe_ok=True, backwards_ok=True, careful=True)
 
     def rotate(self):
         displacement, angle = self.our_attacker.get_direction_to_point(self.our_attacker.x, self.align_y)
@@ -929,7 +929,7 @@ class AttackerDriveByTurn(Strategy):
             self.current_state = self.DRIVE
             return do_nothing()
         else:
-            return calculate_motor_speed(None, angle, careful=True)
+            return move(None, angle, careful=True)
 
     def drive(self):
         y = self.goal_points[self.drive_side] - 10 * math.sin(self.our_attacker.angle)
@@ -945,7 +945,7 @@ class AttackerDriveByTurn(Strategy):
                 self.current_state = self.ROTATE
             return do_nothing()
         else:
-            return calculate_motor_speed(distance, angle, backwards_ok=True)
+            return move(distance, angle, strafe_ok=True, backwards_ok=True)
 
     def shoot(self):
         # Decide the direction of the right angle turn, based on our position and
@@ -1026,7 +1026,7 @@ class AttackerTurnScore(Strategy):
             return do_nothing()
         else:
             distance, angle = self.our_attacker.get_direction_to_point(ideal_x, ideal_y)
-            return calculate_motor_speed(distance, angle)
+            return move(distance, angle)
 
     def position(self):
         '''
@@ -1055,7 +1055,7 @@ class AttackerTurnScore(Strategy):
                 ideal_y = goal_edges[self.point]
 
             distance, angle = self.our_attacker.get_direction_to_point(ideal_x, ideal_y)
-            return calculate_motor_speed(distance, angle, backwards_ok=True)
+            return move(distance, angle, strafe_ok=True, backwards_ok=True)
 
     def kick(self):
         # Decide the direction of the right angle turn, based on our position and
@@ -1132,7 +1132,7 @@ class AttackerGrabCareful(Strategy):
             return self.align()
 
         distance, angle = our_attacker.get_direction_to_point(ideal_x, ideal_y)
-        return calculate_motor_speed(distance, angle, careful=True)
+        return move(distance, angle, careful=True)
 
     def align(self):
         our_attacker = self.world.our_attacker
@@ -1146,7 +1146,7 @@ class AttackerGrabCareful(Strategy):
             self.current_state = self.ALIGNED
             return self.grab()
 
-        motors = calculate_motor_speed(None, angle, careful=True)
+        motors = move(None, angle, careful=True)
         print 'MOTORS', motors
         return motors
 
@@ -1160,7 +1160,7 @@ class AttackerGrabCareful(Strategy):
             return grab_ball()
 
         distance, angle = our_attacker.get_direction_to_point(ball.x, ball.y)
-        return calculate_motor_speed(distance, angle, careful=True)
+        return move(distance, angle, careful=True)
 
     def finish(self):
         return do_nothing()
