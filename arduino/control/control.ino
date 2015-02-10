@@ -48,6 +48,8 @@ Command commands[7];
 #define _GET_HEADING 'U'
 #define _TURN_LEFT 'A'
 #define _TURN_RIGHT 'D'
+#define _STRAFE_LEFT 'C'
+#define _STRAFE_RIGHT 'V'
 
 #define _LEFT_DRIVE 2
 #define _RIGHT_DRIVE 4
@@ -169,6 +171,24 @@ void decodeCommand() {
       targetHeading = (getCurrentHeading()  - deltaAngle) % 360;
       commands[0].data = getHeadingTolerance(getCurrentHeading(), targetHeading);
       break;
+
+    case _STRAFE_LEFT:
+      commands[0].millis = millis();
+      commands[0].functionPtr = &strafe;
+      commands[0].data = data;
+      targetHeading = getCurrentHeading();
+      motorBackward(_BACK_DRIVE, data);
+      break;
+
+    case _STRAFE_RIGHT:
+      commands[0].millis = millis();
+      commands[0].functionPtr = &strafe;
+      commands[0].data = data;
+      targetHeading = getCurrentHeading();
+      motorForward(_BACK_DRIVE, data);
+      break;
+
+
 
     // kick commands
     case _KICK:
@@ -336,8 +356,6 @@ void turnRight(byte tolerance) {
   int tolerance;
   headingDiff = getHeadingDiff(targetHeading, heading);
   tolerance = getHeadingTolerance(targetHeading, heading);
-  Serial.write(headingDiff > tolerance);
-  Serial.write(headingDiff < -tolerance);
   if (headingDiff > tolerance) {
     commands[0].functionPtr = &turnLeft;
     commands[0].millis = millis();
@@ -352,6 +370,27 @@ void turnRight(byte tolerance) {
     voidCommand(0);
   }
  }
+
+void strafe(byte data) {
+  int heading = getCurrentHeading();
+  headingDiff = getHeadingDiff(targetHeading, heading);
+  if (headingDiff > _HEADING_TOLERANCE) {
+    motorForward(_LEFT_DRIVE, 40);
+    motorForward(_RIGHT_DRIVE, 40);
+  }
+
+  else if (headingDiff < -(_HEADING_TOLERANCE)) {
+    motorBackward(_LEFT_DRIVE, 40);
+    motorBackward(_RIGHT_DRIVE, 40);
+  }
+
+  else {
+    motorStop(_LEFT_DRIVE);
+    motorStop(_RIGHT_DRIVE);
+  }
+
+  commands[0].millis += 50;
+}
 
 //grabber commands
 void startOpenGrabber(byte data) {
