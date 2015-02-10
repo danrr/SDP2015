@@ -195,7 +195,7 @@ class Defender_Controller(Robot_Controller):
         #Sends move forward
         if action["move"]> 0:
             print("Move forward")
-            comm.send('W',action['move'])
+            comm.send('W', action['move'])
 
         #Sends move backward
         elif action['move']<0:
@@ -214,18 +214,37 @@ class Defender_Controller(Robot_Controller):
 
         #sends turn right by a certain angle
         elif action['angle']>0:
-            print("Turn right by " + str(action['angle']))
+            print("Turn right by " + str(action['angle']*2))
             comm.send('D',action['angle'])
 
         #sends turn left by a certain angle
         elif action['angle']<0:
-            print("Turn left by " + str(action['angle']))
-            comm.send('A', abs(action['angle']))
+            print("Turn left by " + str(abs(action['angle']*2)))
+            comm.send('A',abs(action['angle']))
 
         #sends close both grabbers at the same time
         elif action['grabber']== 0 :
             print("Close both grabbers at once")
-            comm.send('X',(action['grabber']))
+            comm.send('X', (action['grabber']))
+
+        #sends close right grabber first
+        elif action['grabber']== 1:
+            print("Close left grabber first")
+            comm.send('X',0)
+
+        #sends close left grabber first
+        elif action['grabber']== 2:
+            print("Close left grabber first")
+            comm.send('X',0)
+        
+        #sends kick command
+        elif action['kick']== 1:
+            print("Kick")
+            comm.send('Q',0)
+
+        #Else stop
+        else:
+            comm.send(' ',0)
 
     def shutdown(self, comm):
         pass
@@ -246,7 +265,7 @@ class Attacker_Controller(Robot_Controller):
         Execute robot action.
         """
 
-        #Sends move forward
+                #Sends move forward
         if action["move"]> 0:
             print("Move forward")
             comm.send('W', action['move'])
@@ -280,7 +299,6 @@ class Attacker_Controller(Robot_Controller):
         elif action['grabber']== 0 :
             print("Close both grabbers at once")
             comm.send('X', (action['grabber']))
-            time.sleep(0.2)
 
         #sends close right grabber first
         elif action['grabber']== 1:
@@ -291,6 +309,15 @@ class Attacker_Controller(Robot_Controller):
         elif action['grabber']== 2:
             print("Close left grabber first")
             comm.send('X',0)
+        
+        #sends kick command
+        elif action['kick']== 1:
+            print("Kick")
+            comm.send('Q',0)
+
+        #Else stop
+        else:
+            comm.send(' ',0)
 
     def shutdown(self, comm):
         pass
