@@ -160,7 +160,6 @@ class Controller:
             if self.defender is not None:
                 self.defender.shutdown(self.arduino)
 
-                
 class Robot_Controller(object):
     """
     Robot_Controller superclass for robot control.
@@ -174,8 +173,8 @@ class Robot_Controller(object):
 
     def shutdown(self, comm):
         # TO DO
-        pass
-
+        comm.write('D_RUN_KICK\n')
+        comm.write('D_RUN_ENGINE %d %d\n' % (0, 0))
 
 class Defender_Controller(Robot_Controller):
     """
@@ -206,12 +205,12 @@ class Defender_Controller(Robot_Controller):
         #sends strafe right
         elif action['strafe']>0:
             print("Strafe right")
-            comm.send(4, action['strafe'])
+            comm.send('V', action['strafe'])
 
         #sends strafe left
         elif action['strafe']<0:
             print("Strafe left")
-            comm.send(2, abs(action['strafe']))
+            comm.send('C', abs(action['strafe']))
 
         #sends turn right by a certain angle
         elif action['angle']>0:
@@ -221,42 +220,15 @@ class Defender_Controller(Robot_Controller):
         #sends turn left by a certain angle
         elif action['angle']<0:
             print("Turn left by " + str(action['angle']))
-            comm.send('A',abs(action['angle']))
+            comm.send('A', abs(action['angle']))
 
         #sends close both grabbers at the same time
         elif action['grabber']== 0 :
             print("Close both grabbers at once")
             comm.send('X',(action['grabber']))
-            time.sleep(0.2)
 
-        #sends close right grabber first
-        elif action['grabber']== 1:
-            print("Close left grabber first")
-            comm.send(5,0)
-            time.sleep(0.2)
-            comm.send(1,0)
-
-        #sends close left grabber first
-        elif action['grabber']== 2:
-            print("Close left grabber first")
-            comm.send(1,0)
-            time.sleep(0.2)
-            comm.send(5,0)
-
-        #sends open grabber
-        elif action['grabber']== 3:
-            print("open grabber")
-            comm.send('Z',0)
-
-        #sends the kick command
-        elif action['kick']>0:
-            print("kick")
-            comm.send('Q', action['kick'])
-
-        else:
-            comm.send(' ',0)
-
-
+    def shutdown(self, comm):
+        pass
 
 class Attacker_Controller(Robot_Controller):
     """
@@ -273,10 +245,11 @@ class Attacker_Controller(Robot_Controller):
         """
         Execute robot action.
         """
+
         #Sends move forward
         if action["move"]> 0:
             print("Move forward")
-            comm.send('W',action['move'])
+            comm.send('W', action['move'])
 
         #Sends move backward
         elif action['move']<0:
@@ -286,57 +259,41 @@ class Attacker_Controller(Robot_Controller):
         #sends strafe right
         elif action['strafe']>0:
             print("Strafe right")
-            comm.send(4, action['strafe'])
+            comm.send('V', action['strafe'])
 
         #sends strafe left
         elif action['strafe']<0:
             print("Strafe left")
-            comm.send(2, abs(action['strafe']))
+            comm.send('C', abs(action['strafe']))
 
         #sends turn right by a certain angle
         elif action['angle']>0:
-            print("Turn right by " + str(action['angle']))
+            print("Turn right by " + str(action['angle']*2))
             comm.send('D',action['angle'])
 
         #sends turn left by a certain angle
         elif action['angle']<0:
-            print("Turn left by " + str(action['angle']))
+            print("Turn left by " + str(abs(action['angle']*2)))
             comm.send('A',abs(action['angle']))
 
         #sends close both grabbers at the same time
         elif action['grabber']== 0 :
             print("Close both grabbers at once")
-            comm.send('X',(action['grabber']))
+            comm.send('X', (action['grabber']))
             time.sleep(0.2)
 
         #sends close right grabber first
         elif action['grabber']== 1:
             print("Close left grabber first")
-            comm.send(5,0)
-            time.sleep(0.2)
-            comm.send(1,0)
+            comm.send('X',0)
 
         #sends close left grabber first
         elif action['grabber']== 2:
             print("Close left grabber first")
-            comm.send(1,0)
-            time.sleep(0.2)
-            comm.send(5,0)
+            comm.send('X',0)
 
-        #sends open grabber
-        elif action['grabber']== 3:
-            print("open grabber")
-            comm.send('Z',0)
-
-        #sends the kick command
-        elif action['kick']>0:
-            print("kick")
-            comm.send('Q', action['kick'])
-
-        else:
-            comm.send(' ',0)
-
-
+    def shutdown(self, comm):
+        pass
 
 class Arduino:
 
@@ -376,8 +333,8 @@ class Arduino:
 
     def send(self, string, data):
         if self.comms == 1:
-            print ("Sending message to Arduino: " + string + data)
-            self.serial.write(string+data)
+            print ("Sending message to Arduino: " + string + str(data))
+            self.serial.write(string+chr(data))
 
     def heartBeat(self):
         #TODO refactor this method, waiting for response from heartbeat
@@ -415,3 +372,4 @@ if __name__ == '__main__':
     else:
         c = Controller(
             pitch=int(args.pitch), color=args.color, our_side=args.side, role=args.role).wow()
+

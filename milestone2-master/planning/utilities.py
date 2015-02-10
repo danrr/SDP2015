@@ -149,24 +149,24 @@ def move(displacement, angle, strafe_ok=False, backwards_ok=False, careful=False
             return do_nothing()
 
         elif abs(angle) > angle_thresh:
-            angle = ((angle/pi)* 180)/2
+            angle = int(((angle/pi)* 180)/2)
             return {'move': 0, 'strafe': 0, 'angle': angle, 'grabber' : -1, 'kick':0}
 
         else:
-            speed = log(displacement, 10) * MAX_DISPLACEMENT_SPEED
+            speed = 100
             speed = -speed if moving_backwards else speed
             if careful:
-                speed /= 4
+                speed /= 2
             # print 'DISP:', displacement
             if not moving_sideways:
-                return {'move': speed, 'strafe': 0, 'angle': angle, 'grabber' : -1, 'kick':0}
+                return {'move': speed, 'strafe': 0, 'angle': 0, 'grabber' : -1, 'kick':0}
             else:
-                return {'move': 0, 'strafe': speed, 'angle': angle, 'grabber' : -1, 'kick':0}
+                return {'move': 0, 'strafe': speed, 'angle': 0, 'grabber' : -1, 'kick':0}
 
     else:
 
         if abs(angle) > angle_thresh:
-            angle = (angle/pi) * MAX_ANGLE_SPEED * 180
+            angle = int(((angle/pi) * 180)/2)
             return {'move': 0, 'strafe': 0, 'angle': angle, 'grabber' : -1, 'kick':0}
 
         else:
