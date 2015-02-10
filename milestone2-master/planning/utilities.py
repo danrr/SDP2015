@@ -1,5 +1,5 @@
 from math import tan, pi, hypot, log
-from planning.models import Robot
+from models import Robot
 
 DISTANCE_MATCH_THRESHOLD = 15
 ANGLE_MATCH_THRESHOLD = pi/10
@@ -117,39 +117,51 @@ def has_matched(robot, x=None, y=None, angle=None,
     return dist_matched and angle_matched
 
 
-def calculate_motor_speed(displacement, angle, strafe=False, backwards_ok=False, careful=False):
+def move(displacement, angle, strafe_ok=False, backwards_ok=False, careful=False):
     '''
-    Simplistic view of calculating the speed: no modes or trying to be careful
+    Move in a heading given by "angle" for a distance "displacement". If grabbing the ball, strafe_ok and backwards_ok
+    should be false so the robot can orientate itself to face the ball. Otherwise it should be able to strafe or reverse
+    in order to reach it's destination quickly
     '''
     moving_backwards = False
-    general_speed = 33 if careful else 100
+    moving_sideways = True
     angle_thresh = BALL_ANGLE_THRESHOLD if careful else ANGLE_MATCH_THRESHOLD
 
-    if backwards_ok and abs(angle) > pi/2:
+
+    # If heading is greater than 135 degrees the robot should go backwards, therefore the heading needs to be adjusted
+    # by 180 degrees
+
+    if backwards_ok and abs(angle) > (3*pi)/4:
         angle = (-pi + angle) if angle > 0 else (pi + angle)
         moving_backwards = True
+
+    # If heading is between 135 and 45 degrees the robot should strafe, therefore the heading needs to be adjusted by
+    # 90 degrees
+    if strafe_ok and abs(angle) <= (3*pi)/4 and abs(angle) >= pi/4:
+        angle = angle - (pi/2) if angle > 0 else angle + (pi/2)
+        moving_sideways = True
+        if angle < 0:
+            moving_backwards = True
 
     if not (displacement is None):
 
         if displacement < DISTANCE_MATCH_THRESHOLD:
-            return {'move': 0, 'strafe': 0, 'angle': 0, 'grabber' : -1, 'kick':0}
+            return do_nothing()
 
         elif abs(angle) > angle_thresh:
-            angle = ((angle/pi) * MAX_ANGLE_SPEED * 180)/2
+            angle = ((angle/pi)* 180)/2
             return {'move': 0, 'strafe': 0, 'angle': angle, 'grabber' : -1, 'kick':0}
 
         else:
             speed = log(displacement, 10) * MAX_DISPLACEMENT_SPEED
             speed = -speed if moving_backwards else speed
-            # print 'DISP:', displacement
             if careful:
-                if not strafe:
-                    return {'move': speed/4, 'strafe': 0, 'angle': 0, 'grabber' : -1, 'kick':0}
-                else: return {'move': 0, 'strafe': speed/4, 'angle': 0, 'grabber' : -1, 'kick':0}
-            elif not strafe:
-                return {'move': speed, 'strafe': 0, 'angle': 0, 'grabber' : -1, 'kick':0}
+                speed /= 4
+            # print 'DISP:', displacement
+            if not moving_sideways:
+                return {'move': speed, 'strafe': 0, 'angle': angle, 'grabber' : -1, 'kick':0}
             else:
-                return {'move': 0, 'strafe': speed, 'angle': 0, 'grabber' : -1, 'kick':0}
+                return {'move': 0, 'strafe': speed, 'angle': angle, 'grabber' : -1, 'kick':0}
 
     else:
 
@@ -162,4 +174,4 @@ def calculate_motor_speed(displacement, angle, strafe=False, backwards_ok=False,
 
 
 def do_nothing():
-    return calculate_motor_speed(0, 0)
+    return {'move': 0, 'strafe': 0, 'angle': 0, 'grabber': -1, 'kick': 0}
