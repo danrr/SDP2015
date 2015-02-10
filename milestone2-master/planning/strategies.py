@@ -247,5 +247,36 @@ class AttackerShoot(Strategy):
 
 class DefenderPass(Strategy):
 
+    AIM, PASS = 'AIM', 'PASS'
+    STATES = [AIM, PASS]
+
     def __init__(self, world):
-        pass
+        super(DefenderPass, self).__init__(world, self.STATES)
+
+        self.NEXT_ACTION_MAP = {
+            self.AIM: self.aim,
+            self.PASS: self.pass,
+        }
+
+        self.our_defender = self.world.our_defender
+        self.ball = self.world.ball
+        
+    def aim(self): 
+        '''
+        Aim towards our attacker zone
+        '''
+
+        self.current_state = self.AIM
+        # Angle to turn in order to aim at our attacker zone
+        angle_to_turn = self.our_attacker.get_rotation_to_point(60, 100)
+
+        # Rotate at the given angle
+        return move(0, angle_to_turn)
+
+    def pass(self):
+        '''
+        Pass the ball
+        '''
+
+        self.current_state = self.PASS
+        return kick_ball(70)
