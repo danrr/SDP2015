@@ -408,17 +408,23 @@ class Arduino:
                     print("sending heartbeat")
                     self.serial = serial.Serial(self.port, self.rate, timeout=self.timeout)
                     self.heartBeat()
+<<<<<<< HEAD
+                    self.comms = 0
+                except Exception as e:
+=======
                 except:
+>>>>>>> c8ceff91cc51dfc5e89879bfa72d4bb5aaceaa11
                     print ("No Arduino detected!")
                     print ("Continuing without comms.")
+                    print (e)
                     self.comms = 0
                     #raise
         else:
             print ("Communication with Arduino is turned off")
             #self.write('A_RUN_KICK\n')
-            self.write('A_RUN_ENGINE %d %d\n' % (0, 0))
+            self.send('A_RUN_ENGINE %d %d\n' % (0, 0))
             #self.write('D_RUN_KICK\n')
-            self.write('D_RUN_ENGINE %d %d\n' % (0, 0))
+            self.send('D_RUN_ENGINE %d %d\n' % (0, 0))
             self.comms = 0
 
     def send(self, string, data):
@@ -429,7 +435,7 @@ class Arduino:
     def heartBeat(self):
         #TODO refactor this method, waiting for response from heartbeat
         bits_toSend = "X"
-        self.write("L"+bits_toSend)
+        self.serial.write("L"+bits_toSend)
         time.sleep(0.3)
         bits_waiting = self.serial.inWaiting()
         if (bits_waiting):
