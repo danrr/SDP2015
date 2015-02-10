@@ -190,10 +190,10 @@ class Defender_Controller(Robot_Controller):
         self.active = False
      
     def isBusy(self, comm):
-        bits_waiting = comm.serial.inWaiting()
-        if (bits_waiting):
-            print hex(ord(comm.serial.read()))
-            self.busy = False
+        #bits_waiting = comm.serial.inWaiting()
+        #if (bits_waiting):
+         #   print hex(ord(comm.serial.read()))
+          #  self.busy = False
         return self.busy
 
     def execute(self, comm, action):
@@ -216,32 +216,32 @@ class Defender_Controller(Robot_Controller):
                 self.active = True
 
         #sends strafe right
-        elif action['strafe']>0:
+        elif action['strafe']<0:
             if not self.busy or not self.isBusy(comm):
                 print("Strafe right")
-                comm.send('V', action['strafe'])
+                comm.send('V', abs(action['strafe']))
                 self.active = True
 
         #sends strafe left
-        elif action['strafe']<0:
+        elif action['strafe']>0:
             if not self.busy or not self.isBusy(comm):
                 print("Strafe left")
-                comm.send('C', abs(action['strafe']))
+                comm.send('C', action['strafe'])
                 self.active = True
 
         #sends turn right by a certain angle
-        elif action['angle']>0:
+        elif action['angle']<0:
             if not self.busy or not self.isBusy(comm):
                 print("Turn right by " + str(action['angle']*2))
-                comm.send('D',action['angle'])
+                comm.send('D', abs(action['angle']))
                 self.busy = True
                 self.active = True
 
         #sends turn left by a certain angle
-        elif action['angle']<0:
+        elif action['angle']>0:
             if not self.busy or not self.isBusy(comm):
                 print("Turn left by " + str(abs(action['angle']*2)))
-                comm.send('A', abs(action['angle']))
+                comm.send('A', action['angle'])
                 self.busy = True
                 self.active = True
 
@@ -318,32 +318,32 @@ class Attacker_Controller(Robot_Controller):
                 self.active = True
 
         #sends strafe right
-        elif action['strafe']>0:
+        elif action['strafe']<0:
             if not self.busy or not self.isBusy(comm):
                 print("Strafe right")
-                comm.send('V', action['strafe'])
+                comm.send('V', abs(action['strafe']))
                 self.active = True
 
         #sends strafe left
-        elif action['strafe']<0:
+        elif action['strafe']>0:
             if not self.busy or not self.isBusy(comm):
                 print("Strafe left")
-                comm.send('C', abs(action['strafe']))
+                comm.send('C', action['strafe'])
                 self.active = True
 
         #sends turn right by a certain angle
-        elif action['angle']>0:
+        elif action['angle']<0:
             if not self.busy or not self.isBusy(comm):
                 print("Turn right by " + str(action['angle']*2))
-                comm.send('D',action['angle'])
+                comm.send('D', abs(action['angle']))
                 self.busy = True
                 self.active = True
 
         #sends turn left by a certain angle
-        elif action['angle']<0:
+        elif action['angle']>0:
             if not self.busy or not self.isBusy(comm):
                 print("Turn left by " + str(abs(action['angle']*2)))
-                comm.send('A', abs(action['angle']))
+                comm.send('A', action['angle'])
                 self.busy = True
                 self.active = True
 
@@ -413,9 +413,9 @@ class Arduino:
         else:
             print ("Communication with Arduino is turned off")
             #self.write('A_RUN_KICK\n')
-            self.send('A_RUN_ENGINE %d %d\n' % (0, 0))
+            #self.send('A_RUN_ENGINE %d %d\n' % (0, 0))
             #self.write('D_RUN_KICK\n')
-            self.send('D_RUN_ENGINE %d %d\n' % (0, 0))
+            #self.send('D_RUN_ENGINE %d %d\n' % (0, 0))
             self.comms = 0
 
     def send(self, string, data):

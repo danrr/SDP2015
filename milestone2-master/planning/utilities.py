@@ -123,8 +123,9 @@ def move(displacement, angle, strafe_ok=False, backwards_ok=False, careful=False
     should be false so the robot can orientate itself to face the ball. Otherwise it should be able to strafe or reverse
     in order to reach it's destination quickly
     '''
+    print('Angle: '+ str(angle*180/pi))
     moving_backwards = False
-    moving_sideways = True
+    moving_sideways = False
     angle_thresh = BALL_ANGLE_THRESHOLD if careful else ANGLE_MATCH_THRESHOLD
 
 
