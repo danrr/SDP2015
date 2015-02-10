@@ -357,6 +357,7 @@ void turnLeft(byte tolerance) {
     motorStop(_LEFT_DRIVE);
     motorStop(_RIGHT_DRIVE);
     voidCommand(0);
+    response = 0xff;
   }
   else {    
     setRotationalSpeed(-getTurnSpeed(headingDiff));
@@ -374,6 +375,7 @@ void turnRight(byte tolerance) {
     motorStop(_LEFT_DRIVE);
     motorStop(_RIGHT_DRIVE);
     voidCommand(0);
+    response = 0xff;
   }
   else {
     setRotationalSpeed(getTurnSpeed(headingDiff));
