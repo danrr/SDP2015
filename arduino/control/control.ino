@@ -161,6 +161,7 @@ void decodeCommand() {
       break;
 
     case _TURN_LEFT:
+      turnPower = -30;
       commands[0].millis = millis();
       commands[0].functionPtr = &turnLeft;
       deltaAngle = (int)data * 2;
@@ -169,6 +170,7 @@ void decodeCommand() {
       break;
 
     case _TURN_RIGHT:
+      turnPower = 30;
       commands[0].millis = millis();
       commands[0].functionPtr = &turnRight;
       deltaAngle = (int)data * 2;
@@ -314,28 +316,30 @@ void driveMotorStop(byte data) {
 }
 
 void setRotationalSpeed(int target) {
-  if (!turnPower) {
-    turnPower = 0;
-  }
-  const int _THRESHOLD = 5;
+  const int _THRESHOLD = 1;
   int currentGyro = getGyroOrientation();
   int gyroDiff = target - currentGyro; //negative if more ccw, positive if more cw.
+
   if (gyroDiff > _THRESHOLD) {
-    turnPower+=10;
+    turnPower+=1;
+    if (turnPower > 100) {
+      turnPower = 100;
+    }
   }
   else if (gyroDiff < -(_THRESHOLD)) {
-    turnPower-=10;
+    turnPower-=1;
+    if (turnPower < -100) {
+      turnPower = -100;
+    }
   }
-  else {
-   turnPower=0;
+ 
+  if (turnPower > 10) {
+    motorBackward(_LEFT_DRIVE, turnPower);
+    motorBackward(_RIGHT_DRIVE, turnPower);
   }
-  if (turnPower > 0) {
-    motorForward(_LEFT_DRIVE, turnPower);
-    motorForward(_RIGHT_DRIVE, turnPower);
-  }
-  else if (turnPower < 0) {
-    motorBackward(_LEFT_DRIVE, -turnPower);
-    motorBackward(_RIGHT_DRIVE, -turnPower);
+  else if (turnPower < -10) {
+    motorForward(_LEFT_DRIVE, -turnPower);
+    motorForward(_RIGHT_DRIVE, -turnPower);
   }
   else {
     motorStop(_LEFT_DRIVE);
@@ -344,78 +348,38 @@ void setRotationalSpeed(int target) {
 }
 
 void turnLeft(byte tolerance) {
-  //check compass and do things
+  // check compass and do things
   headingDiff = getHeadingDiff(targetHeading, getCurrentHeading());
-  //Serial.write(getGyroOrientation() / 2);
   if (headingDiff < 0) {
     headingDiff = 360 + headingDiff;
   }
   if (headingDiff < tolerance) {
-
     motorStop(_LEFT_DRIVE);
     motorStop(_RIGHT_DRIVE);
-    commands[0].functionPtr = &correctTurnError;
+    voidCommand(0);
+  }
+  else {    
+    setRotationalSpeed(-getTurnSpeed(headingDiff));
     commands[0].millis = millis() + _TURN_DELAY;
   }
-  else {
-    
-    // byte power = getTurnSpeed(headingDiff);
-    // motorForward(_LEFT_DRIVE, power);
-    // motorForward(_RIGHT_DRIVE, power);
-    // commands[0].millis = millis() + _TURN_DELAY;
-    //experimental...
-    setRotationalSpeed(-50-headingDiff);
-    commands[0].millis = millis() + _TURN_DELAY;
-  }
-
 }  
- 
+
 void turnRight(byte tolerance) {
   //check compass and do things
   headingDiff = -getHeadingDiff(targetHeading, getCurrentHeading());
-  //Serial.write(getGyroOrientation() / 2);
   if (headingDiff < 0) {
     headingDiff = 360 + headingDiff;
   }
   if (headingDiff < tolerance) {
     motorStop(_LEFT_DRIVE);
     motorStop(_RIGHT_DRIVE);
-    commands[0].functionPtr = &correctTurnError;
-    commands[0].millis = millis() + _TURN_DELAY;
-  }
-  else {
-    
-    // byte power = getTurnSpeed(headingDiff);
-    // motorBackward(_LEFT_DRIVE, power);
-    // motorBackward(_RIGHT_DRIVE, power);
-    // commands[0].millis = millis() + _TURN_DELAY;
-    
-    setRotationalSpeed(50 + headingDiff);
-    commands[0].millis = millis() + _TURN_DELAY;
-  }
-  
- }
-
- void correctTurnError(byte data) {
-  int heading = getCurrentHeading();
-  int tolerance;
-  headingDiff = getHeadingDiff(targetHeading, heading);
-  tolerance = getHeadingTolerance(targetHeading, heading);
-  if (headingDiff > tolerance) {
-    commands[0].functionPtr = &turnLeft;
-    commands[0].millis = millis();
-    commands[0].data = tolerance;
-  }
-  else if (headingDiff < -tolerance) {
-    commands[0].functionPtr = &turnRight;
-    commands[0].millis = millis();
-    commands[0].data = tolerance;
-  }
-  else {
     voidCommand(0);
-    response = 0xFF; // say that we've finished
   }
- }
+  else {
+    setRotationalSpeed(getTurnSpeed(headingDiff));
+    commands[0].millis = millis() + _TURN_DELAY;
+  }
+}
 
 void strafe(byte data) {
   int heading = getCurrentHeading();
@@ -533,13 +497,20 @@ int getCurrentHeading() {
 }
 
 byte getTurnSpeed(int headingDiff) {
-  return 40;
+  int turnSpeed = headingDiff / 4;
+  if (turnSpeed < 50) {
+    turnSpeed = 50;
+  }
+  else if (turnSpeed > 200) {
+    turnSpeed = 200;
+  }
+ return turnSpeed;
 } 
 
 byte getHeadingTolerance(int currentHeading, int targetHeading) {
   int deltaAngle;
   deltaAngle = getHeadingDiff(targetHeading, currentHeading);
-  return 5 + abs(deltaAngle)/5;
+  return 5 + abs(deltaAngle) / 5;
 }
 
 /*
