@@ -408,12 +408,8 @@ class Arduino:
                     print("sending heartbeat")
                     self.serial = serial.Serial(self.port, self.rate, timeout=self.timeout)
                     self.heartBeat()
-<<<<<<< HEAD
                     self.comms = 0
                 except Exception as e:
-=======
-                except:
->>>>>>> c8ceff91cc51dfc5e89879bfa72d4bb5aaceaa11
                     print ("No Arduino detected!")
                     print ("Continuing without comms.")
                     print (e)
