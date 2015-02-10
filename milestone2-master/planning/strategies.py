@@ -472,12 +472,12 @@ class AttackerGrab(Strategy):
         else:
             self.our_attacker.catcher = 'closed'
             # the angle by which the robot needs to rotate in order to achieve alignment with the ball
-            angle = self.our_attacker.get_rotation_to_point(self.ball.x, self.ball.y)
-            if angle > 0:
+            angle = (self.our_attacker.get_rotation_to_point(self.ball.x, self.ball.y)/pi)*180
+            if angle > 30:
                 return grab_ball_left()
-            elif angle < 0: 
+            elif angle < -30: 
                 return grab_ball_right()
-            elif angle == 0: 
+            else: 
                 return grab_ball_center()
 
 

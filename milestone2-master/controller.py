@@ -113,7 +113,7 @@ class Controller:
                 
                 attacker_actions = {'move': 0, 'strafe': 0, 'angle': 0, 'grabber' : -1, 'kick':0}
                 defender_actions = {'move': 0, 'strafe': 0, 'angle': 0, 'grabber' : -1, 'kick':0}   
-                if self.arduino.comms == 1: 
+                if self.arduino.comms == 1 or self.arduino.comms == 0: 
                     if self.attacker is not None:
                         attacker_actions = self.planner.plan('attacker')
                         self.attacker.execute(self.arduino, attacker_actions)
@@ -191,15 +191,10 @@ class Defender_Controller(Robot_Controller):
      
     def isBusy(self, comm):
         bits_waiting = comm.serial.inWaiting()
-        print bits_waiting
         if (bits_waiting):
-            inBits = ord(comm.serial.read())
-            print inBits
-            if inBits == 255:
-                print "Turn Finished"
-                self.busy = False
-                return False
-        return True
+            print hex(ord(comm.serial.read()))
+            self.busy = False
+        return self.busy
 
     def execute(self, comm, action):
         """
@@ -208,27 +203,31 @@ class Defender_Controller(Robot_Controller):
 
         #Sends move forward
         if action["move"]> 0:
-            print("Move forward")
-            comm.send('W', action['move'])
-            self.active = True
+            if not self.busy or not self.isBusy(comm):
+                print("Move forward")
+                comm.send('W', action['move'])
+                self.active = True
 
         #Sends move backward
         elif action['move']<0:
-            print("Move Backward")
-            comm.send('S',abs(action['move']))
-            self.active = True
+            if not self.busy or not self.isBusy(comm):
+                print("Move Backward")
+                comm.send('S',abs(action['move']))
+                self.active = True
 
         #sends strafe right
         elif action['strafe']>0:
-            print("Strafe right")
-            comm.send('V', action['strafe'])
-            self.active = True
+            if not self.busy or not self.isBusy(comm):
+                print("Strafe right")
+                comm.send('V', action['strafe'])
+                self.active = True
 
         #sends strafe left
         elif action['strafe']<0:
-            print("Strafe left")
-            comm.send('C', abs(action['strafe']))
-            self.active = True
+            if not self.busy or not self.isBusy(comm):
+                print("Strafe left")
+                comm.send('C', abs(action['strafe']))
+                self.active = True
 
         #sends turn right by a certain angle
         elif action['angle']>0:
@@ -237,8 +236,6 @@ class Defender_Controller(Robot_Controller):
                 comm.send('D',action['angle'])
                 self.busy = True
                 self.active = True
-            else: 
-                print "Still Busy"
 
         #sends turn left by a certain angle
         elif action['angle']<0:
@@ -247,8 +244,6 @@ class Defender_Controller(Robot_Controller):
                 comm.send('A', abs(action['angle']))
                 self.busy = True
                 self.active = True
-            else: 
-                print "Still Busy"
 
         #sends close both grabbers at the same time
         elif action['grabber']== 0 :
@@ -278,6 +273,7 @@ class Defender_Controller(Robot_Controller):
         elif action == {'move': 0, 'strafe': 0, 'angle': 0, 'grabber': -1, 'kick': 0} and self.active:
             comm.send(' ',0)
             self.active = False
+            self.busy = False
 
     def shutdown(self, comm):
         pass
@@ -293,16 +289,13 @@ class Attacker_Controller(Robot_Controller):
         """
         super(Attacker_Controller, self).__init__()
         self.busy = False
+        self.active = False
         
     def isBusy(self, comm):
         bits_waiting = comm.serial.inWaiting()
         if (bits_waiting):
-            inBits = ord(comm.serial.read())
-            print inBits
-            if inBits == 255:
-                print "Turn Finished"
-                self.busy = False
-                return False
+            self.busy = False
+            return False
         return True
 
     def execute(self, comm, action):
@@ -312,27 +305,31 @@ class Attacker_Controller(Robot_Controller):
 
         #Sends move forward
         if action["move"]> 0:
-            print("Move forward")
-            comm.send('W', action['move'])
-            self.active = True
+            if not self.busy or not self.isBusy(comm):
+                print("Move forward")
+                comm.send('W', action['move'])
+                self.active = True
 
         #Sends move backward
         elif action['move']<0:
-            print("Move Backward")
-            comm.send('S',abs(action['move']))
-            self.active = True
+            if not self.busy or not self.isBusy(comm):
+                print("Move Backward")
+                comm.send('S',abs(action['move']))
+                self.active = True
 
         #sends strafe right
         elif action['strafe']>0:
-            print("Strafe right")
-            comm.send('V', action['strafe'])
-            self.active = True
+            if not self.busy or not self.isBusy(comm):
+                print("Strafe right")
+                comm.send('V', action['strafe'])
+                self.active = True
 
         #sends strafe left
         elif action['strafe']<0:
-            print("Strafe left")
-            comm.send('C', abs(action['strafe']))
-            self.active = True
+            if not self.busy or not self.isBusy(comm):
+                print("Strafe left")
+                comm.send('C', abs(action['strafe']))
+                self.active = True
 
         #sends turn right by a certain angle
         elif action['angle']>0:
@@ -341,8 +338,6 @@ class Attacker_Controller(Robot_Controller):
                 comm.send('D',action['angle'])
                 self.busy = True
                 self.active = True
-            else: 
-                print "Still Busy"
 
         #sends turn left by a certain angle
         elif action['angle']<0:
@@ -351,7 +346,6 @@ class Attacker_Controller(Robot_Controller):
                 comm.send('A', abs(action['angle']))
                 self.busy = True
                 self.active = True
-            else: print "Still Busy"
 
         #sends close both grabbers at the same time
         elif action['grabber']== 0 :
@@ -381,6 +375,7 @@ class Attacker_Controller(Robot_Controller):
         elif action == {'move': 0, 'strafe': 0, 'angle': 0, 'grabber': -1, 'kick': 0} and self.active:
             comm.send(' ',0)
             self.active = False
+            self.busy = False
 
     def shutdown(self, comm):
         pass
@@ -425,7 +420,7 @@ class Arduino:
 
     def send(self, string, data):
         if self.comms == 1:
-            print ("Sending message to Arduino: " + string + str(data))
+            # print ("Sending message to Arduino: " + string + str(data))
             self.serial.write(string+chr(data))
 
     def heartBeat(self):
@@ -464,4 +459,4 @@ if __name__ == '__main__':
     else:
         c = Controller(
             pitch=int(args.pitch), color=args.color, our_side=args.side, role=args.role).wow()
-
+            
