@@ -17,6 +17,8 @@ Servo kicker;
 unsigned long current_millis;
 int targetHeading, headingDiff;
 
+int turnPower;
+
 /* Assign a unique ID to the sensors */
 
 Adafruit_9DOF                  dof   = Adafruit_9DOF();
@@ -60,6 +62,8 @@ Command commands[7];
 #define _HEADING_TOLERANCE 1
 #define _HEADING_CORRECTION_COEFFICIENT 0.5
 #define _TURN_DELAY 50
+
+#define _RAD_TO_DEG 57.2957795
 
 
 /*
@@ -309,23 +313,58 @@ void driveMotorStop(byte data) {
   voidCommand(0);
 }
 
+void setRotationalSpeed(int target) {
+  if (!turnPower) {
+    turnPower = 0;
+  }
+  const int _THRESHOLD = 5;
+  int currentGyro = getGyroOrientation();
+  int gyroDiff = target - currentGyro; //negative if more ccw, positive if more cw.
+  if (gyroDiff > _THRESHOLD) {
+    turnPower+=10;
+  }
+  else if (gyroDiff < -(_THRESHOLD)) {
+    turnPower-=10;
+  }
+  else {
+   turnPower=0;
+  }
+  if (turnPower > 0) {
+    motorForward(_LEFT_DRIVE, turnPower);
+    motorForward(_RIGHT_DRIVE, turnPower);
+  }
+  else if (turnPower < 0) {
+    motorBackward(_LEFT_DRIVE, -turnPower);
+    motorBackward(_RIGHT_DRIVE, -turnPower);
+  }
+  else {
+    motorStop(_LEFT_DRIVE);
+    motorStop(_RIGHT_DRIVE);
+  }
+}
 
 void turnLeft(byte tolerance) {
   //check compass and do things
   headingDiff = getHeadingDiff(targetHeading, getCurrentHeading());
+  //Serial.write(getGyroOrientation() / 2);
   if (headingDiff < 0) {
     headingDiff = 360 + headingDiff;
   }
   if (headingDiff < tolerance) {
+
     motorStop(_LEFT_DRIVE);
     motorStop(_RIGHT_DRIVE);
     commands[0].functionPtr = &correctTurnError;
     commands[0].millis = millis() + _TURN_DELAY;
   }
   else {
-    byte power = getTurnSpeed(headingDiff);
-    motorForward(_LEFT_DRIVE, power);
-    motorForward(_RIGHT_DRIVE, power);
+    
+    // byte power = getTurnSpeed(headingDiff);
+    // motorForward(_LEFT_DRIVE, power);
+    // motorForward(_RIGHT_DRIVE, power);
+    // commands[0].millis = millis() + _TURN_DELAY;
+    //experimental...
+    setRotationalSpeed(-50-headingDiff);
     commands[0].millis = millis() + _TURN_DELAY;
   }
 
@@ -334,6 +373,7 @@ void turnLeft(byte tolerance) {
 void turnRight(byte tolerance) {
   //check compass and do things
   headingDiff = -getHeadingDiff(targetHeading, getCurrentHeading());
+  //Serial.write(getGyroOrientation() / 2);
   if (headingDiff < 0) {
     headingDiff = 360 + headingDiff;
   }
@@ -344,11 +384,16 @@ void turnRight(byte tolerance) {
     commands[0].millis = millis() + _TURN_DELAY;
   }
   else {
-    byte power = getTurnSpeed(headingDiff);
-    motorBackward(_LEFT_DRIVE, power);
-    motorBackward(_RIGHT_DRIVE, power);
+    
+    // byte power = getTurnSpeed(headingDiff);
+    // motorBackward(_LEFT_DRIVE, power);
+    // motorBackward(_RIGHT_DRIVE, power);
+    // commands[0].millis = millis() + _TURN_DELAY;
+    
+    setRotationalSpeed(50 + headingDiff);
     commands[0].millis = millis() + _TURN_DELAY;
   }
+  
  }
 
  void correctTurnError(byte data) {
@@ -368,6 +413,7 @@ void turnRight(byte tolerance) {
   }
   else {
     voidCommand(0);
+    response = 0xFF; // say that we've finished
   }
  }
 
@@ -495,9 +541,14 @@ byte getHeadingTolerance(int currentHeading, int targetHeading) {
   deltaAngle = getHeadingDiff(targetHeading, currentHeading);
   return 5 + abs(deltaAngle)/5;
 }
-// short getGyroOrientation() {
-//   sensors_event_t event; 
-//   gyro.getEvent(&event);
+
+/*
+  Returns degrees per second. 
+*/
+
+int getGyroOrientation() {
+  sensors_event_t event; 
+  gyro.getEvent(&event);
   
-//   return (short) event.gyro.z;
-// }
+  return (int) (event.gyro.y * _RAD_TO_DEG);
+}
