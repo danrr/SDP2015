@@ -114,32 +114,23 @@ class Planner:
                 return do_nothing()
 
         else:
-            
-            # If ball is in our attacker zone, then grab the ball and score:
+          
+             # If ball is in our attacker zone, then grab the ball and score:
             if self._world.pitch.zones[our_attacker.zone].isInside(ball.x, ball.y):
 
-                if self.attacker_state != 'score':
-                    self.attacker_state = 'grab'
+                if self._attacker_state == 'score':
+                    self._attacker_state = 'grab'
+                    self._attacker_current_strategy = AttackerGrab(self._world)
 
                 # Check if we should switch from a grabbing to a scoring strategy.
                 elif self._attacker_state == 'grab' and self._attacker_current_strategy.current_state == 'GRABBED':
                     print "[ATTACKER]: we grabbed the ball so go ahead and score"
                     self._attacker_state = 'score'
-                    self._attacker_current_strategy = self.choose_attacker_strategy(self._world)
-
-                elif self._attacker_state == 'grab':
-                    # Switch to careful mode if the ball is too close to the wall.
-                    
-                    print "[ATTACKER]: grab"
-                    self._attacker_current_strategy = AttackerGrab(self._world)
-
-                elif self._attacker_state == 'score' and self._attacker_current_strategy.current_state == 'FINISHED':
-                    self._attacker_state = 'grab'
-                    self._attacker_current_strategy = self.choose_attacker_strategy(self._world)
-                    print "[ATTACKER]: we finished kicking the ball"
+                    self._attacker_current_strategy = AttackerShoot(self._world)
 
                 return self._attacker_current_strategy.generate()
 
             else:
-                print "[ATTACKER]: motor speed on 0"
+              
+                print "[ATTACKER]: do nothing (ball is not in our attacker zone)"
                 return move(0, 0)

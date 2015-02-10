@@ -262,6 +262,11 @@ class Defender_Controller(Robot_Controller):
             print("Close left grabber first")
             comm.send('X',0)
             self.active = True
+
+        elif action['grabber']== 3:
+            print("Open grabber")
+            comm.send('Z',0)
+            self.active = True
         
         #sends kick command
         elif action['kick']== 1:

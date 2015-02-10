@@ -215,8 +215,39 @@ class DefenderGrab(Strategy):
 
 class AttackerShoot(Strategy):
 
+    AIM, SHOOT, = 'AIM', 'SHOOT'
+    STATES = [AIM, SHOOT]
+
     def __init__(self, world):
-        pass
+        super(AttackerShoot, self).__init__(world, self.STATES)
+
+        self.NEXT_ACTION_MAP = {
+            self.AIM: self.aim,
+            self.SHOOT: self.shoot,
+        }
+
+        self.our_attacker = self.world.our_attacker
+        self.ball = self.world.ball
+
+    def aim(self): 
+        '''
+        Aim towards the centre of the enemy goal (will change this later)
+        '''
+
+        self.current_state = self.AIM
+        # Angle to turn in order to aim at the centre of the enemy goal
+        self.angle_to_turn = self.our_attacker.get_rotation_to_point(20, 100)
+
+        # Rotate at the given angle
+        return move(0, angle_to_turn)
+
+    def shoot(self):
+        '''
+        Shoot at the enemy goal
+        '''
+
+        self.current_state = self.SHOOT
+        return kick_ball(100)
 
 class DefenderPass(Strategy):
 
