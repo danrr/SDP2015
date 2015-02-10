@@ -192,10 +192,10 @@ class Defender_Controller(Robot_Controller):
         self.active = False
      
     def isBusy(self, comm):
-        #bits_waiting = comm.serial.inWaiting()
-        #if (bits_waiting):
-         #   print hex(ord(comm.serial.read()))
-          #  self.busy = False
+        bits_waiting = comm.serial.inWaiting()
+        if (bits_waiting):
+            print hex(ord(comm.serial.read()))
+            self.busy = False
         return self.busy
 
     def execute(self, comm, action):
@@ -260,7 +260,7 @@ class Defender_Controller(Robot_Controller):
 
         #sends close right grabber first
         elif action['grabber']== 1:
-            print("Close left grabber first")
+            print("Close right grabber first")
             comm.send('X',0)
             self.active = True
 
@@ -276,9 +276,9 @@ class Defender_Controller(Robot_Controller):
             self.active = True
         
         #sends kick command
-        elif action['kick']== 1:
+        elif action['kick']>0:
             print("Kick")
-            comm.send('Q',0)
+            comm.send('Q',action['kick'])
             self.active = True
 
     def shutdown(self, comm):
@@ -366,7 +366,7 @@ class Attacker_Controller(Robot_Controller):
 
         #sends close right grabber first
         elif action['grabber']== 1:
-            print("Close left grabber first")
+            print("Close right grabber first")
             comm.send('X',0)
             self.active = True
 

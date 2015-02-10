@@ -79,6 +79,9 @@ class DefenderDefence(Strategy):
         if self.ball.velocity <= BALL_VELOCITY or predicted_y is None: 
             predicted_y = predict_y_intersection(self.world, self.our_defender.x, self.their_attacker, bounce=False)
 
+        if self.our_defender.catcher == 'closed':
+            self.our_defender.catcher = 'open'
+            return open_catcher()
         
         if predicted_y is not None:
             displacement, angle = self.our_defender.get_direction_to_point(self.our_defender.x,
@@ -103,18 +106,15 @@ class DefenderDefence(Strategy):
             return self.world.our_goal.x - self.GOAL_ALIGN_OFFSET
 
 
-
-
 class AttackerGrab(Strategy):
 
-    PREPARE, GO_TO_BALL, GRAB_BALL, GRABBED = 'PREPARE', 'GO_TO_BALL', 'GRAB_BALL', 'GRABBED'
-    STATES = [PREPARE, GO_TO_BALL, GRAB_BALL, GRABBED]
+    GO_TO_BALL, GRAB_BALL, GRABBED = 'GO_TO_BALL', 'GRAB_BALL', 'GRABBED'
+    STATES = [GO_TO_BALL, GRAB_BALL, GRABBED]
 
     def __init__(self, world):
         super(AttackerGrab, self).__init__(world, self.STATES)
 
         self.NEXT_ACTION_MAP = {
-            self.PREPARE: self.prepare,
             self.GO_TO_BALL: self.position,
             self.GRAB_BALL: self.grab,
             self.GRABBED: do_nothing
@@ -123,12 +123,12 @@ class AttackerGrab(Strategy):
         self.our_attacker = self.world.our_attacker
         self.ball = self.world.ball
 
-    def prepare(self):
-        self.current_state = self.GO_TO_BALL
-        return open_catcher()
-
     def position(self):
         displacement, angle = self.our_attacker.get_direction_to_point(self.ball.x, self.ball.y)
+
+        if self.our_attacker.catcher == 'closed':
+            self.our_attacker.catcher = 'open'
+            return open_catcher()
         if self.our_attacker.can_catch_ball(self.ball):
             self.current_state = self.GRAB_BALL
             return do_nothing()
@@ -142,12 +142,12 @@ class AttackerGrab(Strategy):
         else:
             self.our_attacker.catcher = 'closed'
             # the angle by which the robot needs to rotate in order to achieve alignment with the ball
-            angle = self.our_attacker.get_rotation_to_point(self.ball.x, self.ball.y)
-            if angle > 0:
-                return grab_ball_left()
-            elif angle < 0: 
+            angle = 180*self.our_attacker.get_rotation_to_point(self.ball.x, self.ball.y)/math.pi
+            if angle > 30:
                 return grab_ball_right()
-            elif angle == 0: 
+            elif angle < -30:
+                return grab_ball_left()
+            else:
                 return grab_ball_center()
 
 
@@ -187,6 +187,10 @@ class DefenderGrab(Strategy):
 
     def position(self):
         displacement, angle = self.our_defender.get_direction_to_point(self.ball.x, self.ball.y)
+        # print self.our_defender.catcher
+        if self.our_defender.catcher == 'closed':
+            self.our_defender.catcher = 'open'
+            return open_catcher()
         if self.our_defender.can_catch_ball(self.ball):
             self.current_state = self.GRAB_BALL
             return do_nothing()
@@ -200,12 +204,12 @@ class DefenderGrab(Strategy):
         else:
             self.our_defender.catcher = 'closed'
             # the angle by which the robot needs to rotate in order to achieve alignment with the ball            
-            angle = self.our_defender.get_rotation_to_point(self.ball.x, self.ball.y)
-            if angle > 0:
-                return grab_ball_left()
-            elif angle < 0: 
+            angle = 180*self.our_defender.get_rotation_to_point(self.ball.x, self.ball.y)/math.pi
+            if angle > 30:
                 return grab_ball_right()
-            elif angle == 0: 
+            elif angle < -30:
+                return grab_ball_left()
+            else:
                 return grab_ball_center()
 
 
@@ -255,7 +259,7 @@ class DefenderPass(Strategy):
 
         self.NEXT_ACTION_MAP = {
             self.AIM: self.aim,
-            self.PASS: self.pass_ball,
+            self.PASS_BALL: self.pass_ball,
         }
 
         self.our_defender = self.world.our_defender
@@ -268,7 +272,7 @@ class DefenderPass(Strategy):
 
         self.current_state = self.AIM
         # Angle to turn in order to aim at our attacker zone
-        angle_to_turn = self.our_attacker.get_rotation_to_point(60, 100)
+        angle_to_turn = self.our_defender.get_rotation_to_point(60, 100)
 
         # Rotate at the given angle
         return move(0, angle_to_turn)
@@ -277,6 +281,6 @@ class DefenderPass(Strategy):
         '''
         Pass the ball
         '''
-
+        print "PASS THE FREAKIN BALL"
         self.current_state = self.PASS_BALL
         return kick_ball(70)
