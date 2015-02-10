@@ -183,7 +183,7 @@ class Robot(PitchObject):
     def __init__(self, zone, x, y, angle, velocity, width=ROBOT_WIDTH, length=ROBOT_LENGTH, height=ROBOT_HEIGHT, angle_offset=0):
         super(Robot, self).__init__(x, y, angle, velocity, width, length, height, angle_offset)
         self._zone = zone
-        self._catcher = 'open'
+        self._catcher = 'closed'
 
     @property
     def zone(self):

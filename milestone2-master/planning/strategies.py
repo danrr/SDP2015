@@ -125,11 +125,7 @@ class AttackerGrab(Strategy):
 
     def prepare(self):
         self.current_state = self.GO_TO_BALL
-        if self.our_attacker.catcher == 'closed':
-            self.our_attacker.catcher = 'open'
-            return open_catcher()
-        else:
-            return do_nothing()
+        return open_catcher()
 
     def position(self):
         displacement, angle = self.our_attacker.get_direction_to_point(self.ball.x, self.ball.y)
@@ -236,7 +232,7 @@ class AttackerShoot(Strategy):
 
         self.current_state = self.AIM
         # Angle to turn in order to aim at the centre of the enemy goal
-        self.angle_to_turn = self.our_attacker.get_rotation_to_point(20, 100)
+        angle_to_turn = self.our_attacker.get_rotation_to_point(20, 100)
 
         # Rotate at the given angle
         return move(0, angle_to_turn)

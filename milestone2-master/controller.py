@@ -142,6 +142,8 @@ class Controller:
                     defenderState, attacker_actions, defender_actions, grabbers,
                     our_color=self.color, our_side=self.side, key=c, preprocess=pre_options)
                 counter += 1
+            if self.arduino.isOpen:
+                self.arduino.close()
 
         except:
             #TODO Planning code
@@ -244,9 +246,14 @@ class Defender_Controller(Robot_Controller):
                 comm.send('A', action['angle'])
                 self.busy = True
                 self.active = True
+        # Else stop
+        else:
+            comm.send(' ',0)
+            self.active = False
+            self.busy = False
 
         #sends close both grabbers at the same time
-        elif action['grabber']== 0 :
+        if action['grabber']== 0 :
             print("Close both grabbers at once")
             comm.send('X', (action['grabber']))
             self.active = True
@@ -273,12 +280,6 @@ class Defender_Controller(Robot_Controller):
             print("Kick")
             comm.send('Q',0)
             self.active = True
-            
-        #Else stop
-        elif action == {'move': 0, 'strafe': 0, 'angle': 0, 'grabber': -1, 'kick': 0} and self.active:
-            comm.send(' ',0)
-            self.active = False
-            self.busy = False
 
     def shutdown(self, comm):
         pass
@@ -351,9 +352,14 @@ class Attacker_Controller(Robot_Controller):
                 comm.send('A', action['angle'])
                 self.busy = True
                 self.active = True
+        # Else stop
+        else:
+            comm.send(' ',0)
+            self.active = False
+            self.busy = False
 
         #sends close both grabbers at the same time
-        elif action['grabber']== 0 :
+        if action['grabber']== 0 :
             print("Close both grabbers at once")
             comm.send('X', (action['grabber']))
             self.active = True
@@ -369,6 +375,11 @@ class Attacker_Controller(Robot_Controller):
             print("Close left grabber first")
             comm.send('X',0)
             self.active = True
+
+        elif action['grabber']== 3:
+            print("Open grabber")
+            comm.send('Z',0)
+            self.active = True
         
         #sends kick command
         elif action['kick']== 1:
@@ -376,11 +387,6 @@ class Attacker_Controller(Robot_Controller):
             comm.send('Q',0)
             self.active = True
             
-        #Else stop
-        elif action == {'move': 0, 'strafe': 0, 'angle': 0, 'grabber': -1, 'kick': 0} and self.active:
-            comm.send(' ',0)
-            self.active = False
-            self.busy = False
 
     def shutdown(self, comm):
         pass
@@ -441,6 +447,13 @@ class Arduino:
                 print ("Communication estabilished - incorrect response")
         else:
             print ("Communication not established")
+
+    def isOpen(self):
+        return self.serial is not None
+
+    def close(self):
+        self.serial.flush()
+        self.serial.close()
 
 
 if __name__ == '__main__':
