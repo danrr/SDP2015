@@ -295,12 +295,12 @@ class Attacker_Controller(Robot_Controller):
 
         #sends turn right by a certain angle
         elif action['angle']>0:
-            print("Turn right by " + action['angle'])
+            print("Turn right by " + str(action['angle']))
             comm.send('D',action['angle'])
 
         #sends turn left by a certain angle
         elif action['angle']<0:
-            print("Turn left by " + action['angle'])
+            print("Turn left by " + str(action['angle']))
             comm.send('A',abs(action['angle']))
 
         #sends close both grabbers at the same time
