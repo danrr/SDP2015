@@ -112,14 +112,14 @@ class Controller:
                 self.planner.update_world(model_positions)
                 
                 attacker_actions = {'move': 0, 'strafe': 0, 'angle': 0, 'grabber' : -1, 'kick':0}
-                defender_actions = {'move': 0, 'strafe': 0, 'angle': 0, 'grabber' : -1, 'kick':0}
-
-                if self.attacker is not None:
-                    attacker_actions = self.planner.plan('attacker')
-                    self.attacker.execute(self.arduino, attacker_actions)
-                if self.defender is not None:
-                    defender_actions = self.planner.plan('defender')
-                    self.defender.execute(self.arduino, defender_actions)
+                defender_actions = {'move': 0, 'strafe': 0, 'angle': 0, 'grabber' : -1, 'kick':0}   
+                if self.arduino.comms == 1: 
+                    if self.attacker is not None:
+                        attacker_actions = self.planner.plan('attacker')
+                        self.attacker.execute(self.arduino, attacker_actions)
+                    if self.defender is not None:
+                        defender_actions = self.planner.plan('defender')
+                        self.defender.execute(self.arduino, defender_actions)
 
                 # Information about the grabbers from the world
                 grabbers = {
@@ -186,6 +186,20 @@ class Defender_Controller(Robot_Controller):
         Do the same setup as the Robot class, as well as anything specific to the Defender.
         """
         super(Defender_Controller, self).__init__()
+        self.busy = False
+        self.active = False
+     
+    def isBusy(self, comm):
+        bits_waiting = comm.serial.inWaiting()
+        print bits_waiting
+        if (bits_waiting):
+            inBits = ord(comm.serial.read())
+            print inBits
+            if inBits == 255:
+                print "Turn Finished"
+                self.busy = False
+                return False
+        return True
 
     def execute(self, comm, action):
         """
@@ -196,55 +210,74 @@ class Defender_Controller(Robot_Controller):
         if action["move"]> 0:
             print("Move forward")
             comm.send('W', action['move'])
+            self.active = True
 
         #Sends move backward
         elif action['move']<0:
             print("Move Backward")
             comm.send('S',abs(action['move']))
+            self.active = True
 
         #sends strafe right
         elif action['strafe']>0:
             print("Strafe right")
             comm.send('V', action['strafe'])
+            self.active = True
 
         #sends strafe left
         elif action['strafe']<0:
             print("Strafe left")
             comm.send('C', abs(action['strafe']))
+            self.active = True
 
         #sends turn right by a certain angle
         elif action['angle']>0:
-            print("Turn right by " + str(action['angle']*2))
-            comm.send('D',action['angle'])
+            if not self.busy or not self.isBusy(comm):
+                print("Turn right by " + str(action['angle']*2))
+                comm.send('D',action['angle'])
+                self.busy = True
+                self.active = True
+            else: 
+                print "Still Busy"
 
         #sends turn left by a certain angle
         elif action['angle']<0:
-            print("Turn left by " + str(abs(action['angle']*2)))
-            comm.send('A',abs(action['angle']))
+            if not self.busy or not self.isBusy(comm):
+                print("Turn left by " + str(abs(action['angle']*2)))
+                comm.send('A', abs(action['angle']))
+                self.busy = True
+                self.active = True
+            else: 
+                print "Still Busy"
 
         #sends close both grabbers at the same time
         elif action['grabber']== 0 :
             print("Close both grabbers at once")
             comm.send('X', (action['grabber']))
+            self.active = True
 
         #sends close right grabber first
         elif action['grabber']== 1:
             print("Close left grabber first")
             comm.send('X',0)
+            self.active = True
 
         #sends close left grabber first
         elif action['grabber']== 2:
             print("Close left grabber first")
             comm.send('X',0)
+            self.active = True
         
         #sends kick command
         elif action['kick']== 1:
             print("Kick")
             comm.send('Q',0)
-
+            self.active = True
+            
         #Else stop
-        else:
+        elif action == {'move': 0, 'strafe': 0, 'angle': 0, 'grabber': -1, 'kick': 0} and self.active:
             comm.send(' ',0)
+            self.active = False
 
     def shutdown(self, comm):
         pass
@@ -259,65 +292,95 @@ class Attacker_Controller(Robot_Controller):
         Do the same setup as the Robot class, as well as anything specific to the Attacker.
         """
         super(Attacker_Controller, self).__init__()
+        self.busy = False
+        
+    def isBusy(self, comm):
+        bits_waiting = comm.serial.inWaiting()
+        if (bits_waiting):
+            inBits = ord(comm.serial.read())
+            print inBits
+            if inBits == 255:
+                print "Turn Finished"
+                self.busy = False
+                return False
+        return True
 
     def execute(self, comm, action):
         """
         Execute robot action.
         """
 
-                #Sends move forward
+        #Sends move forward
         if action["move"]> 0:
             print("Move forward")
             comm.send('W', action['move'])
+            self.active = True
 
         #Sends move backward
         elif action['move']<0:
             print("Move Backward")
             comm.send('S',abs(action['move']))
+            self.active = True
 
         #sends strafe right
         elif action['strafe']>0:
             print("Strafe right")
             comm.send('V', action['strafe'])
+            self.active = True
 
         #sends strafe left
         elif action['strafe']<0:
             print("Strafe left")
             comm.send('C', abs(action['strafe']))
+            self.active = True
 
         #sends turn right by a certain angle
         elif action['angle']>0:
-            print("Turn right by " + str(action['angle']*2))
-            comm.send('D',action['angle'])
+            if not self.busy or not self.isBusy(comm):
+                print("Turn right by " + str(action['angle']*2))
+                comm.send('D',action['angle'])
+                self.busy = True
+                self.active = True
+            else: 
+                print "Still Busy"
 
         #sends turn left by a certain angle
         elif action['angle']<0:
-            print("Turn left by " + str(abs(action['angle']*2)))
-            comm.send('A',abs(action['angle']))
+            if not self.busy or not self.isBusy(comm):
+                print("Turn left by " + str(abs(action['angle']*2)))
+                comm.send('A', abs(action['angle']))
+                self.busy = True
+                self.active = True
+            else: print "Still Busy"
 
         #sends close both grabbers at the same time
         elif action['grabber']== 0 :
             print("Close both grabbers at once")
             comm.send('X', (action['grabber']))
+            self.active = True
 
         #sends close right grabber first
         elif action['grabber']== 1:
             print("Close left grabber first")
             comm.send('X',0)
+            self.active = True
 
         #sends close left grabber first
         elif action['grabber']== 2:
             print("Close left grabber first")
             comm.send('X',0)
+            self.active = True
         
         #sends kick command
         elif action['kick']== 1:
             print("Kick")
             comm.send('Q',0)
-
+            self.active = True
+            
         #Else stop
-        else:
+        elif action == {'move': 0, 'strafe': 0, 'angle': 0, 'grabber': -1, 'kick': 0} and self.active:
             comm.send(' ',0)
+            self.active = False
 
     def shutdown(self, comm):
         pass
@@ -342,9 +405,9 @@ class Arduino:
             self.comms = 1
             if self.serial is None:
                 try:
+                    print("sending heartbeat")
                     self.serial = serial.Serial(self.port, self.rate, timeout=self.timeout)
                     self.heartBeat()
-                    self.comms = 0
                 except:
                     print ("No Arduino detected!")
                     print ("Continuing without comms.")
