@@ -247,7 +247,7 @@ class AttackerShoot(Strategy):
 
 class DefenderPass(Strategy):
 
-    AIM, PASS = 'AIM', 'PASS_BALL'
+    AIM, PASS_BALL = 'AIM', 'PASS_BALL'
     STATES = [AIM, PASS_BALL]
 
     def __init__(self, world):
