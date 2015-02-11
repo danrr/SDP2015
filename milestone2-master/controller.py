@@ -190,11 +190,13 @@ class Defender_Controller(Robot_Controller):
         super(Defender_Controller, self).__init__()
         self.busy = False
         self.active = False
+        self.old_action = {"move": 0}
      
     def isBusy(self, comm):
         bits_waiting = comm.serial.inWaiting()
-        if (bits_waiting):
-            print hex(ord(comm.serial.read()))
+        a = ord(comm.serial.read())
+        print a
+        if bits_waiting and a == 255:
             self.busy = False
         return self.busy
 
@@ -202,6 +204,9 @@ class Defender_Controller(Robot_Controller):
         """
         Execute robot action.
         """
+        if action["move"] and self.old_action["move"]:
+            return
+        self.old_action = action
 
         #Sends move forward
         if action["move"]> 0:
@@ -296,18 +301,24 @@ class Attacker_Controller(Robot_Controller):
         super(Attacker_Controller, self).__init__()
         self.busy = False
         self.active = False
-        
+        self.old_action = {"move": 0}
+
     def isBusy(self, comm):
         bits_waiting = comm.serial.inWaiting()
-        if (bits_waiting):
-            self.busy = False
-            return False
-        return True
+        if bits_waiting:
+            a = ord(comm.serial.read())
+            print a
+            if a == 255:
+                self.busy = False
+        return self.busy
 
     def execute(self, comm, action):
         """
         Execute robot action.
         """
+        if action["move"] and self.old_action["move"]:
+            return
+        self.old_action = action
 
         #Sends move forward
         if action["move"]> 0:
@@ -414,7 +425,6 @@ class Arduino:
                     print("sending heartbeat")
                     self.serial = serial.Serial(self.port, self.rate, timeout=self.timeout)
                     self.heartBeat()
-                    self.comms = 0
                 except Exception as e:
                     print ("No Arduino detected!")
                     print ("Continuing without comms.")

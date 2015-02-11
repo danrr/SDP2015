@@ -9,8 +9,8 @@ class Planner:
     def __init__(self, our_side, pitch_num):
         self._world = World(our_side, pitch_num)
         #measurement used 1cm = 2.28px
-        self._world.our_defender.catcher_area = {'width' : 40, 'height' : 20, 'front_offset' : 18} #10
-        self._world.our_attacker.catcher_area = {'width' : 40, 'height' : 20, 'front_offset' : 18}
+        self._world.our_defender.catcher_area = {'width' : 50, 'height' : 25, 'front_offset' : 18} #10
+        self._world.our_attacker.catcher_area = {'width' : 50, 'height' : 25, 'front_offset' : 18}
 
         # self._defender_defence_strat = DefenderDefence(self._world)
         # self._defender_attack_strat = DefaultDefenderAttack(self._world)
@@ -91,7 +91,7 @@ class Planner:
                 
                 # If our task was to grab the ball and the ball is already grabbed, then pass
                 if  self._defender_state == 'grab' and self._defender_current_strategy.current_state == 'GRABBED':
-                    #print "[DEFENDER]: we already grabbed the ball, so now pass it!"
+                    print "[DEFENDER]: we already grabbed the ball, so now pass it!"
                     self._defender_state = 'pass'
                     self._defender_current_strategy = self.choose_defender_strategy(self._world)
 
@@ -121,7 +121,7 @@ class Planner:
 
                 # Check if we should switch from a grabbing to a scoring strategy.
                 if self._attacker_state == 'grab' and self._attacker_current_strategy.current_state == 'GRABBED':
-                    print "[ATTACKER]: we grabbed the ball so go ahead and shoot"
+                    # print "[ATTACKER]: we grabbed the ball so go ahead and shoot"
                     self._attacker_state = 'shoot'
                     self._attacker_current_strategy = self.choose_attacker_strategy(self._world)
 
@@ -129,14 +129,14 @@ class Planner:
                 elif self._attacker_state == 'grab':
                     # Switch to careful mode if the ball is too close to the wall.
                     
-                    print "[ATTACKER]: grab"
+                    # print "[ATTACKER]: grab"
                     self._attacker_current_strategy = AttackerGrab(self._world)
 
                 #If we've finished shooting
                 elif self._attacker_state == 'shoot' and self._attacker_current_strategy.current_state == 'FINISHED':
                     self._attacker_state = 'grab'
                     self._attacker_current_strategy = self.choose_attacker_strategy(self._world)
-                    print "[ATTACKER]: we finished kicking the ball"
+                    # print "[ATTACKER]: we finished kicking the ball"
 
                 elif self._attacker_state == 'shoot' and self._attacker_current_strategy.current_state != 'FINISHED':
                     self._attacker_state= 'shoot'
@@ -145,5 +145,9 @@ class Planner:
                 return self._attacker_current_strategy.generate()
 
             else:
-                print "[ATTACKER]: motor speed on 0"
-                return move(0, 0)
+                # print "[ATTACKER]: motor speed on 0"
+                #print our_attacker.catcher
+                if our_attacker.catcher == 'open':
+                    our_attacker.catcher = 'closed'
+                    return grab_ball_center()
+                else: return do_nothing()

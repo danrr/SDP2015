@@ -6,10 +6,10 @@ from vision import tools
 # Length measures along the sides of an object
 
 #original value ROBOT_WIDTH = 30
-ROBOT_WIDTH = 40
-ROBOT_LENGTH = 45
+ROBOT_WIDTH = 30
+ROBOT_LENGTH = 40
 #original value ROBOT_HEIGHT = 40
-ROBOT_HEIGHT = 40
+ROBOT_HEIGHT = 10
 
 BALL_WIDTH = 5
 BALL_LENGTH = 5
