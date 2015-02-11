@@ -191,12 +191,17 @@ class Defender_Controller(Robot_Controller):
         self.busy = False
         self.active = False
         self.old_action = {"move": 0}
+        self.time = time.clock()
      
     def isBusy(self, comm):
         bits_waiting = comm.serial.inWaiting()
         a = ord(comm.serial.read())
         print a
         if bits_waiting and a == 255:
+            self.busy = False
+        print self.time + 1 < time.clock()
+        if self.time + 1 < time.clock():
+            print "time out"
             self.busy = False
         return self.busy
 
@@ -242,7 +247,9 @@ class Defender_Controller(Robot_Controller):
                 print("Turn right by " + str(action['angle']*2))
                 comm.send('D', abs(action['angle']))
                 self.busy = True
+                self.time = time.clock()
                 self.active = True
+                print self.time
 
         #sends turn left by a certain angle
         elif action['angle']>0:
@@ -250,7 +257,9 @@ class Defender_Controller(Robot_Controller):
                 print("Turn left by " + str(abs(action['angle']*2)))
                 comm.send('A', action['angle'])
                 self.busy = True
+                self.time = time.clock()
                 self.active = True
+                print self.time
         # Else stop
         else:
             comm.send(' ',0)
@@ -305,6 +314,7 @@ class Attacker_Controller(Robot_Controller):
         self.old_action = {"move": 0,
                            "angle": 0,
                            "strafe": 0}
+        self.time = time.clock()
 
     def isBusy(self, comm):
         bits_waiting = comm.serial.inWaiting()
@@ -313,13 +323,16 @@ class Attacker_Controller(Robot_Controller):
             print a
             if a == 255:
                 self.busy = False
+        if self.time + 1 < time.clock():
+            print "time out"
+            self.busy = False
         return self.busy
 
     def execute(self, comm, action):
         """
         Execute robot action.
         """
-        if action["move"] and self.old_action["move"]:
+        if action["move"] and action["move"] == self.old_action["move"]:
             return
         if action["move"] == 0 and self.old_action["move"] == 0\
                 and action["angle"] == 0 and self.old_action["angle"] == 0\
@@ -328,10 +341,12 @@ class Attacker_Controller(Robot_Controller):
             return
 
         self.old_action = action
+        print self.old_action
 
         #Sends move forward
         if action["move"]> 0:
-            if  not self.isBusy(comm):
+            print "trying to move"
+            if not self.isBusy(comm):
                 print("Move forward")
                 comm.send('W', action['move'])
                 self.active = True
@@ -364,6 +379,7 @@ class Attacker_Controller(Robot_Controller):
                 comm.send('D', abs(action['angle']))
                 self.busy = True
                 self.active = True
+                self.time = time.clock()
 
         #sends turn left by a certain angle
         elif action['angle']>0:
@@ -372,6 +388,8 @@ class Attacker_Controller(Robot_Controller):
                 comm.send('A', action['angle'])
                 self.busy = True
                 self.active = True
+                self.time = time.clock()
+
         # Else stop
         else:
             print "Sending stop"

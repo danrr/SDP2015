@@ -1,7 +1,7 @@
 from math import tan, pi, hypot, log
 from models import Robot
 
-DISTANCE_MATCH_THRESHOLD = 10
+DISTANCE_MATCH_THRESHOLD = 8
 ANGLE_MATCH_THRESHOLD = pi/10
 BALL_ANGLE_THRESHOLD = pi/20
 MAX_DISPLACEMENT_SPEED = 690
