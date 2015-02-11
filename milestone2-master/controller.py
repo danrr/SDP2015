@@ -307,10 +307,8 @@ class Attacker_Controller(Robot_Controller):
         bits_waiting = comm.serial.inWaiting()
         if bits_waiting:
             a = ord(comm.serial.read())
-            print a
             if a == 255:
                 self.busy = False
-        print "old times",self.time,"new timer",time.clock(), "waiting until", (self.time+0.4)
         if self.time + 0.4 < time.clock() and self.flag:
             print "time out"
             self.busy = False
@@ -329,9 +327,6 @@ class Attacker_Controller(Robot_Controller):
                 and action["grabber"] == -1 and not action["kick"]:
             return
 
-        print "old acction",self.old_action
-
-        print "current action",action
 
         #Sends move forward
         if action["move"]> 0:

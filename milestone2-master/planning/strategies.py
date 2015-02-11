@@ -28,6 +28,7 @@ class Strategy(object):
         return self._current_state == self.states[-1]
 
     def generate(self):
+        print self.current_state
         return self.NEXT_ACTION_MAP[self.current_state]()
 
 
@@ -215,8 +216,8 @@ class DefenderGrab(Strategy):
 
 class AttackerShoot(Strategy):
 
-    AIM, OPEN, SHOOT, = 'AIM', 'OPEN', 'SHOOT'
-    STATES = [AIM, OPEN, SHOOT]
+    AIM, OPEN, SHOOT, FINISH = 'AIM', 'OPEN', 'SHOOT', 'FINISHED'
+    STATES = [AIM, OPEN, SHOOT, FINISH]
 
     def __init__(self, world):
         super(AttackerShoot, self).__init__(world, self.STATES)
@@ -234,15 +235,19 @@ class AttackerShoot(Strategy):
         '''
         Aim towards the centre of the enemy goal (will change this later)
         '''
-
-        self.current_state = self.OPEN
+        # if not self.our_attacker.can_catch_ball(self.ball):
+        #     self.current_state = 'FINISHED'
+        #     return do_nothing()
+        # else:
         # Angle to turn in order to aim at the centre of the enemy goal
-        angle_to_turn = self.our_attacker.get_rotation_to_point(20, 100)
-
+        angle_to_turn = self.our_attacker.get_rotation_to_point(460, 150)
+        self.current_state = self.OPEN
         # Rotate at the given angle
-        return move(0, angle_to_turn)
+        angle = int(((angle_to_turn/pi) * 180)/2)
+        return {'move': 0, 'strafe': 0, 'angle': angle, 'grabber' : -1, 'kick':0}
 
     def open(self):
+        print "stuff"
         self.current_state = self.SHOOT
         return open_catcher()
 
