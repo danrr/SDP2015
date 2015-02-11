@@ -144,7 +144,6 @@ def move(displacement, angle, strafe_ok=False, backwards_ok=False, careful=False
         if angle < 0:
             moving_backwards = True
 
-    print displacement
     if displacement:
         if displacement < DISTANCE_MATCH_THRESHOLD:
             return do_nothing()

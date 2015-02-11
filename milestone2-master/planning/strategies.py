@@ -1,3 +1,4 @@
+from planning.models import Goal
 from utilities import *
 import math
 from random import randint
@@ -28,7 +29,6 @@ class Strategy(object):
         return self._current_state == self.states[-1]
 
     def generate(self):
-        print self.current_state
         return self.NEXT_ACTION_MAP[self.current_state]()
 
 
@@ -226,6 +226,7 @@ class AttackerShoot(Strategy):
             self.AIM: self.aim,
             self.OPEN: self.open,
             self.SHOOT: self.shoot,
+            self.FINISH: do_nothing
         }
 
         self.our_attacker = self.world.our_attacker
@@ -240,14 +241,24 @@ class AttackerShoot(Strategy):
         #     return do_nothing()
         # else:
         # Angle to turn in order to aim at the centre of the enemy goal
-        angle_to_turn = self.our_attacker.get_rotation_to_point(460, 150)
-        self.current_state = self.OPEN
+        print self.world.their_goal.y
+        print self.world.their_goal.x
+        print self.world.their_goal.width
+        print self.world.their_goal.length
+
+        angle_to_turn = self.our_attacker.get_rotation_to_point(self.world.their_goal.x,
+                                                                self.world.their_goal.y*2,
+                                                                )
         # Rotate at the given angle
         angle = int(((angle_to_turn/pi) * 180)/2)
+        print angle
+        if abs(angle) > 2 :
+            self.current_state = self.AIM
+        else:
+            self.current_state = self.OPEN
         return {'move': 0, 'strafe': 0, 'angle': angle, 'grabber' : -1, 'kick':0}
 
     def open(self):
-        print "stuff"
         self.current_state = self.SHOOT
         return open_catcher()
 
@@ -257,7 +268,7 @@ class AttackerShoot(Strategy):
         '''
 
         self.current_state = 'FINISHED'
-        return kick_ball(100)
+        return {'move': 0, 'strafe': 0, 'angle': 0, 'grabber' : -1, 'kick':100}
 
 class DefenderPass(Strategy):
 

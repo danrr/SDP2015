@@ -417,10 +417,10 @@ class Attacker_Controller(Robot_Controller):
             comm.send('Z',0)
 
         #sends kick command
-        elif action['kick']== 1:
+        elif action['kick'] > 1:
             self.old_action = action
             print("Kick")
-            comm.send('Q',0)
+            comm.send('Q', action['kick'])
 
 
     def shutdown(self, comm):
