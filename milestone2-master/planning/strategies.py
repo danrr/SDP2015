@@ -219,6 +219,8 @@ class AttackerShoot(Strategy):
     AIM, OPEN, SHOOT, FINISH = 'AIM', 'OPEN', 'SHOOT', 'FINISHED'
     STATES = [AIM, OPEN, SHOOT, FINISH]
 
+    i = 0
+
     def __init__(self, world):
         super(AttackerShoot, self).__init__(world, self.STATES)
 
@@ -241,18 +243,15 @@ class AttackerShoot(Strategy):
         #     return do_nothing()
         # else:
         # Angle to turn in order to aim at the centre of the enemy goal
-        print self.world.their_goal.y
-        print self.world.their_goal.x
-        print self.world.their_goal.width
-        print self.world.their_goal.length
 
         angle_to_turn = self.our_attacker.get_rotation_to_point(self.world.their_goal.x,
                                                                 self.world.their_goal.y,
                                                                 )
         # Rotate at the given angle
         angle = int(((angle_to_turn/pi) * 180)/2) * 0.9
-        print angle
-        if abs(angle) > 2 :
+        print angle, self.i
+        if abs(angle) > 6 and self.i < 40:
+            self.i += 1
             self.current_state = self.AIM
         else:
             self.current_state = self.OPEN
