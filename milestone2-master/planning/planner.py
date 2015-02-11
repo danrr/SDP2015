@@ -137,8 +137,10 @@ class Planner:
                 #     self._attacker_current_strategy = AttackerGrab(self._world)
                 #     print "[ATTACKER]: we finished kicking the ball"
 
-                elif self._attacker_state == 'shoot' and self._attacker_current_strategy.current_state != 'FINISHED':
-                    self._attacker_state = 'shoot'
+                # elif self._attacker_state == 'shoot' and\
+                #         not our_attacker.can_catch_ball(self._world.ball):
+                #     self._attacker_state = 'grab'
+                #     self._attacker_current_strategy = AttackerGrab(self._world)
 
                 return self._attacker_current_strategy.generate()
 

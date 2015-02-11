@@ -247,10 +247,10 @@ class AttackerShoot(Strategy):
         print self.world.their_goal.length
 
         angle_to_turn = self.our_attacker.get_rotation_to_point(self.world.their_goal.x,
-                                                                self.world.their_goal.y*2,
+                                                                self.world.their_goal.y,
                                                                 )
         # Rotate at the given angle
-        angle = int(((angle_to_turn/pi) * 180)/2)
+        angle = int(((angle_to_turn/pi) * 180)/2) * 0.9
         print angle
         if abs(angle) > 2 :
             self.current_state = self.AIM
