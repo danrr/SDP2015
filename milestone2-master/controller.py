@@ -189,7 +189,6 @@ class Defender_Controller(Robot_Controller):
         """
         super(Defender_Controller, self).__init__()
         self.busy = False
-        self.active = False
         self.old_action = {"move": 0}
         self.time = time.clock()
      
@@ -218,28 +217,24 @@ class Defender_Controller(Robot_Controller):
             if  not self.isBusy(comm):
                 print("Move forward")
                 comm.send('W', action['move'])
-                self.active = True
 
         #Sends move backward
         elif action['move']<0:
             if  not self.isBusy(comm):
                 print("Move Backward")
                 comm.send('S',abs(action['move']))
-                self.active = True
 
         #sends strafe right
         elif action['strafe']<0:
             if  not self.isBusy(comm):
                 print("Strafe right")
                 comm.send('V', abs(action['strafe']))
-                self.active = True
 
         #sends strafe left
         elif action['strafe']>0:
             if  not self.isBusy(comm):
                 print("Strafe left")
                 comm.send('C', action['strafe'])
-                self.active = True
 
         #sends turn right by a certain angle
         elif action['angle']<0:
@@ -248,7 +243,6 @@ class Defender_Controller(Robot_Controller):
                 comm.send('D', abs(action['angle']))
                 self.busy = True
                 self.time = time.clock()
-                self.active = True
                 print self.time
 
         #sends turn left by a certain angle
@@ -258,42 +252,35 @@ class Defender_Controller(Robot_Controller):
                 comm.send('A', action['angle'])
                 self.busy = True
                 self.time = time.clock()
-                self.active = True
                 print self.time
         # Else stop
         else:
             comm.send(' ',0)
-            self.active = False
             self.busy = False
 
         #sends close both grabbers at the same time
         if action['grabber']== 0 :
             print("Close both grabbers at once")
             comm.send('X', (action['grabber']))
-            self.active = True
 
         #sends close right grabber first
         elif action['grabber']== 1:
             print("Close right grabber first")
             comm.send('X',0)
-            self.active = True
 
         #sends close left grabber first
         elif action['grabber']== 2:
             print("Close left grabber first")
             comm.send('X',0)
-            self.active = True
 
         elif action['grabber']== 3:
             print("Open grabber")
             comm.send('Z',0)
-            self.active = True
-        
+
         #sends kick command
         elif action['kick']>0:
             print("Kick")
             comm.send('Q',action['kick'])
-            self.active = True
 
     def shutdown(self, comm):
         pass
@@ -310,11 +297,11 @@ class Attacker_Controller(Robot_Controller):
 
         super(Attacker_Controller, self).__init__()
         self.busy = False
-        self.active = False
-        self.old_action = {"move": 0,
-                           "angle": 0,
-                           "strafe": 0}
+        self.old_action = {"move": None,
+                           "angle": None,
+                           "strafe": None}
         self.time = time.clock()
+        self.flag = False
 
     def isBusy(self, comm):
         bits_waiting = comm.serial.inWaiting()
@@ -323,9 +310,11 @@ class Attacker_Controller(Robot_Controller):
             print a
             if a == 255:
                 self.busy = False
-        if self.time + 1 < time.clock():
+        print "old times",self.time,"new timer",time.clock(), "waiting until", (self.time+0.4)
+        if self.time + 0.4 < time.clock() and self.flag:
             print "time out"
             self.busy = False
+            self.flag = False
         return self.busy
 
     def execute(self, comm, action):
@@ -340,92 +329,104 @@ class Attacker_Controller(Robot_Controller):
                 and action["grabber"] == -1 and not action["kick"]:
             return
 
-        self.old_action = action
-        print self.old_action
+        print "old acction",self.old_action
+
+        print "current action",action
 
         #Sends move forward
         if action["move"]> 0:
             print "trying to move"
             if not self.isBusy(comm):
+                self.old_action = action
+                self.time = time.clock()
+                self.flag = True
                 print("Move forward")
                 comm.send('W', action['move'])
-                self.active = True
 
         #Sends move backward
         elif action['move']<0:
             if  not self.isBusy(comm):
+                self.old_action = action
+                self.time = time.clock()
+                self.flag = True
                 print("Move Backward")
                 comm.send('S',abs(action['move']))
-                self.active = True
 
         #sends strafe right
         elif action['strafe']<0:
             if not self.isBusy(comm):
+                self.old_action = action
+                self.time = time.clock()
+                self.flag = True
                 print("Strafe right")
                 comm.send('V', abs(action['strafe']))
-                self.active = True
 
         #sends strafe left
         elif action['strafe']>0:
             if not self.isBusy(comm):
+                self.old_action = action#
+                self.time = time.clock()
+                self.flag = True
+
                 print("Strafe left")
                 comm.send('C', action['strafe'])
-                self.active = True
 
         #sends turn right by a certain angle
         elif action['angle']<0:
             if  not self.isBusy(comm):
+                self.old_action = action
                 print("Turn right by " + str(action['angle']*2))
                 comm.send('D', abs(action['angle']))
                 self.busy = True
-                self.active = True
                 self.time = time.clock()
+                self.flag = True
 
         #sends turn left by a certain angle
         elif action['angle']>0:
             if  not self.isBusy(comm):
+                self.old_action = action
                 print("Turn left by " + str(abs(action['angle']*2)))
                 comm.send('A', action['angle'])
                 self.busy = True
-                self.active = True
                 self.time = time.clock()
+                self.flag = True
 
         # Else stop
         else:
             print "Sending stop"
+            self.old_action = action
             comm.send(' ',0)
-            self.active = False
             self.busy = False
 
         #sends close both grabbers at the same time
         if action['grabber']== 0 :
+            self.old_action = action
             print("Close both grabbers at once")
             comm.send('X', (action['grabber']))
-            self.active = True
 
         #sends close right grabber first
         elif action['grabber']== 1:
+            self.old_action = action
             print("Close right grabber first")
             comm.send('X',0)
-            self.active = True
 
         #sends close left grabber first
         elif action['grabber']== 2:
+            self.old_action = action
             print("Close left grabber first")
             comm.send('X',0)
-            self.active = True
 
         elif action['grabber']== 3:
+            self.old_action = action
             print("Open grabber")
             comm.send('Z',0)
-            self.active = True
-        
+
         #sends kick command
         elif action['kick']== 1:
+            self.old_action = action
             print("Kick")
             comm.send('Q',0)
-            self.active = True
-            
+
 
     def shutdown(self, comm):
         pass

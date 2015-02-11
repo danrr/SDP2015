@@ -116,7 +116,7 @@ class AttackerGrab(Strategy):
 
         self.NEXT_ACTION_MAP = {
             self.GO_TO_BALL: self.position,
-            self.GRAB_BALL: self.grab,
+            #self.GRAB_BALL: self.grab,
             self.GRABBED: do_nothing
         }
 
@@ -130,25 +130,25 @@ class AttackerGrab(Strategy):
             self.our_attacker.catcher = 'open'
             return open_catcher()
         if self.our_attacker.can_catch_ball(self.ball):
-            self.current_state = self.GRAB_BALL
-            return do_nothing()
+            self.current_state = self.GRABBED
+            return grab_ball_center()
         else:
             return move(displacement, angle, careful=True)
 
-    def grab(self):
-        if self.our_attacker.has_ball(self.ball):
-            self.current_state = self.GRABBED
-            return do_nothing()
-        else:
-            self.our_attacker.catcher = 'closed'
-            # the angle by which the robot needs to rotate in order to achieve alignment with the ball
-            angle = 180*self.our_attacker.get_rotation_to_point(self.ball.x, self.ball.y)/math.pi
-            if angle > 30:
-                return grab_ball_right()
-            elif angle < -30:
-                return grab_ball_left()
-            else:
-                return grab_ball_center()
+    # def grab(self):
+    #     if self.our_attacker.has_ball(self.ball):
+    #         # self.current_state = self.GRABBED
+    #         return do_nothing()
+    #     else:
+    #         self.our_attacker.catcher = 'closed'
+    #         # the angle by which the robot needs to rotate in order to achieve alignment with the ball
+    #         angle = 180*self.our_attacker.get_rotation_to_point(self.ball.x, self.ball.y)/math.pi
+    #         if angle > 30:
+    #             return grab_ball_right()
+    #         elif angle < -30:
+    #             return grab_ball_left()
+    #         else:
+    #             return grab_ball_center()
 
 
 class DefenderGrab(Strategy):
@@ -215,14 +215,15 @@ class DefenderGrab(Strategy):
 
 class AttackerShoot(Strategy):
 
-    AIM, SHOOT, = 'AIM', 'SHOOT'
-    STATES = [AIM, SHOOT]
+    AIM, OPEN, SHOOT, = 'AIM', 'OPEN', 'SHOOT'
+    STATES = [AIM, OPEN, SHOOT]
 
     def __init__(self, world):
         super(AttackerShoot, self).__init__(world, self.STATES)
 
         self.NEXT_ACTION_MAP = {
             self.AIM: self.aim,
+            self.OPEN: self.open,
             self.SHOOT: self.shoot,
         }
 
@@ -234,19 +235,23 @@ class AttackerShoot(Strategy):
         Aim towards the centre of the enemy goal (will change this later)
         '''
 
-        self.current_state = self.AIM
+        self.current_state = self.OPEN
         # Angle to turn in order to aim at the centre of the enemy goal
         angle_to_turn = self.our_attacker.get_rotation_to_point(20, 100)
 
         # Rotate at the given angle
         return move(0, angle_to_turn)
 
+    def open(self):
+        self.current_state = self.SHOOT
+        return open_catcher()
+
     def shoot(self):
         '''
         Shoot at the enemy goal
         '''
 
-        self.current_state = self.SHOOT
+        self.current_state = 'FINISHED'
         return kick_ball(100)
 
 class DefenderPass(Strategy):
