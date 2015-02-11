@@ -298,6 +298,7 @@ class Attacker_Controller(Robot_Controller):
         """
         Do the same setup as the Robot class, as well as anything specific to the Attacker.
         """
+
         super(Attacker_Controller, self).__init__()
         self.busy = False
         self.active = False
@@ -312,7 +313,6 @@ class Attacker_Controller(Robot_Controller):
             print a
             if a == 255:
                 self.busy = False
-        print self.busy
         return self.busy
 
     def execute(self, comm, action):
@@ -323,7 +323,8 @@ class Attacker_Controller(Robot_Controller):
             return
         if action["move"] == 0 and self.old_action["move"] == 0\
                 and action["angle"] == 0 and self.old_action["angle"] == 0\
-                and action["strafe"] == 0 and self.old_action["strafe"] == 0 :
+                and action["strafe"] == 0 and self.old_action["strafe"] == 0\
+                and action["grabber"] == -1 and not action["kick"]:
             return
 
         self.old_action = action
