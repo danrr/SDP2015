@@ -396,10 +396,3 @@ class World(object):
         self.their_defender.vector = pos_dict['their_defender']
         self.ball.vector = pos_dict['ball']
         # Checking if the robot locations make sense:
-        # Is the side correct:
-        if (self._our_side == 'left' and not(self.our_defender.x < self.their_attacker.x
-            < self.our_attacker.x < self.their_defender.x)):
-            print "WARNING: The sides are probably wrong!"
-        if (self._our_side == 'right' and not(self.our_defender.x > self.their_attacker.x
-            > self.our_attacker.x > self.their_defender.x)):
-            print "WARNING: The sides are probably wrong!"
