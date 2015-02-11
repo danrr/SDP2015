@@ -1,3 +1,4 @@
+import time
 from planning.models import Goal
 from utilities import *
 import math
@@ -228,11 +229,15 @@ class AttackerShoot(Strategy):
             self.AIM: self.aim,
             self.OPEN: self.open,
             self.SHOOT: self.shoot,
-            self.FINISH: do_nothing
+            self.FINISH: self.sleep
         }
 
         self.our_attacker = self.world.our_attacker
         self.ball = self.world.ball
+
+    def sleep(self):
+        time.sleep(0.650)
+        return do_nothing()
 
     def aim(self): 
         '''
@@ -243,9 +248,9 @@ class AttackerShoot(Strategy):
         #     return do_nothing()
         # else:
         # Angle to turn in order to aim at the centre of the enemy goal
-
+        print self.world.their_goal.x
         angle_to_turn = self.our_attacker.get_rotation_to_point(self.world.their_goal.x,
-                                                                self.world.their_goal.y,
+                                                                132,
                                                                 )
         # Rotate at the given angle
         angle = int(((angle_to_turn/pi) * 180)/2) * 0.9
