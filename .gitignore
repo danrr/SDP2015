@@ -10,7 +10,6 @@ tmp/
 local.properties
 .settings/
 .loadpath
-.py[ocd]
 
 # Eclipse Core
 .project
@@ -40,4 +39,4 @@ local.properties
 .idea
 
 # compiled python files
-*.pyc
+*.py[ocd]
