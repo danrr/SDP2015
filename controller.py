@@ -107,15 +107,8 @@ class Controller:
                 # Find appropriate action
                 self.planner.update_world(model_positions)
                 
-                attacker_actions = {'move': 0, 'strafe': 0, 'angle': 0, 'grabber' : -1, 'kick':0}
-                defender_actions = {'move': 0, 'strafe': 0, 'angle': 0, 'grabber' : -1, 'kick':0}
-                if self.arduino.comms == 1 or self.arduino.comms == 0:
-                    if self.robot is not None:
-                        attacker_actions = self.planner.plan('attacker')
-                        self.robot.execute(self.arduino, attacker_actions)
-                    if self.defender is not None:
-                        defender_actions = self.planner.plan('defender')
-                        self.defender.execute(self.arduino, defender_actions)
+                actions = self.planner.plan()
+                self.robot.execute(self.arduino, actions)
 
                 # Information about the grabbers from the world
                 grabbers = {
@@ -129,13 +122,14 @@ class Controller:
                 #TODO End of planning
                 # Use 'y', 'b', 'r' to change color.
                 c = waitKey(2) & 0xFF
-                actions = []
                 fps = float(counter) / (time.clock() - timer)
                 # Draw vision content and actions
 
+                default_actions = {'move': 0, 'strafe': 0, 'angle': 0, 'grabber' : -1, 'kick':0}
+
                 self.GUI.draw(
-                    frame, model_positions, actions, regular_positions, fps, attackerState,
-                    defenderState, attacker_actions, defender_actions, grabbers,
+                    frame, model_positions, regular_positions, fps, attackerState,
+                    defenderState, default_actions, actions, grabbers,
                     our_color=self.color, our_side=self.side, key=c, preprocess=pre_options)
                 counter += 1
             if self.arduino.isOpen:
@@ -149,6 +143,7 @@ class Controller:
             # Write the new calibrations to a file.
             tools.save_colors(self.pitch, self.calibration)
             self.robot.shutdown(self.arduino)
+
 
 class RobotController(object):
     """
@@ -287,9 +282,9 @@ class RobotController(object):
             print("Kick")
             comm.send('Q', action['kick'])
 
-
     def shutdown(self, comm):
         pass
+
 
 class Arduino:
 

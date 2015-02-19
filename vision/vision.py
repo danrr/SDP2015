@@ -324,7 +324,7 @@ class GUI(object):
     def cast_binary(self, x):
         return x == 1
 
-    def draw(self, frame, model_positions, actions, regular_positions, fps,
+    def draw(self, frame, model_positions, regular_positions, fps,
              aState, dState, a_action, d_action, grabbers, our_color, our_side,
              key=None, preprocess=None):
         """
