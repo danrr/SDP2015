@@ -12,12 +12,13 @@ import time
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
+
 class Controller:
     """
     Primary source of robot control. Ties vision and planning together.
     """
 
-    def __init__(self, pitch, color, our_side, video_port=0, comm_port='/dev/ttyACM0', comms=1, role="defender"):
+    def __init__(self, pitch, color, our_side, video_port=0, comm_port='/dev/ttyACM0', comms=1):
         """
         Entry point for the SDP system.
 
@@ -74,14 +75,9 @@ class Controller:
         self.preprocessing = Preprocessing()
 
         #Planning code
-        self.attacker = None
         self.defender = None
 
-        if(role == "attacker"):
-            self.attacker = Attacker_Controller()
-        elif(role == "defender"):
-            self.defender = Defender_Controller()
-
+        self.robot = RobotController()
 
     def wow(self):
         """
@@ -112,11 +108,11 @@ class Controller:
                 self.planner.update_world(model_positions)
                 
                 attacker_actions = {'move': 0, 'strafe': 0, 'angle': 0, 'grabber' : -1, 'kick':0}
-                defender_actions = {'move': 0, 'strafe': 0, 'angle': 0, 'grabber' : -1, 'kick':0}   
-                if self.arduino.comms == 1 or self.arduino.comms == 0: 
-                    if self.attacker is not None:
+                defender_actions = {'move': 0, 'strafe': 0, 'angle': 0, 'grabber' : -1, 'kick':0}
+                if self.arduino.comms == 1 or self.arduino.comms == 0:
+                    if self.robot is not None:
                         attacker_actions = self.planner.plan('attacker')
-                        self.attacker.execute(self.arduino, attacker_actions)
+                        self.robot.execute(self.arduino, attacker_actions)
                     if self.defender is not None:
                         defender_actions = self.planner.plan('defender')
                         self.defender.execute(self.arduino, defender_actions)
@@ -149,145 +145,22 @@ class Controller:
             #TODO Planning code
             if self.defender is not None:
                 self.defender.shutdown(self.arduino)
-            if self.attacker is not None:
-                self.attacker.shutdown(self.arduino)
+            if self.robot is not None:
+                self.robot.shutdown(self.arduino)
             raise
 
         finally:
             # Write the new calibrations to a file.
             tools.save_colors(self.pitch, self.calibration)
             #TODO Planning code
-            if self.attacker is not None:
-                self.attacker.shutdown(self.arduino)
+            if self.robot is not None:
+                self.robot.shutdown(self.arduino)
             if self.defender is not None:
                 self.defender.shutdown(self.arduino)
 
-class Robot_Controller(object):
-    """
-    Robot_Controller superclass for robot control.
+class RobotController(object):
     """
 
-    def __init__(self):
-        """
-        Connect to Brick and setup Motors/Sensors.
-        """
-        self.current_speed = 0
-
-    def shutdown(self, comm):
-        # TO DO
-        comm.write('D_RUN_KICK\n')
-        comm.write('D_RUN_ENGINE %d %d\n' % (0, 0))
-
-class Defender_Controller(Robot_Controller):
-    """
-    Defender implementation.
-    """
-
-    def __init__(self):
-        """
-        Do the same setup as the Robot class, as well as anything specific to the Defender.
-        """
-        super(Defender_Controller, self).__init__()
-        self.busy = False
-        self.old_action = {"move": 0}
-        self.time = time.clock()
-     
-    def isBusy(self, comm):
-        bits_waiting = comm.serial.inWaiting()
-        a = ord(comm.serial.read())
-        print a
-        if bits_waiting and a == 255:
-            self.busy = False
-        print self.time + 1 < time.clock()
-        if self.time + 1 < time.clock():
-            print "time out"
-            self.busy = False
-        return self.busy
-
-    def execute(self, comm, action):
-        """
-        Execute robot action.
-        """
-        if action["move"] and self.old_action["move"]:
-            return
-        self.old_action = action
-
-        #Sends move forward
-        if action["move"]> 0:
-            if  not self.isBusy(comm):
-                print("Move forward")
-                comm.send('W', action['move'])
-
-        #Sends move backward
-        elif action['move']<0:
-            if  not self.isBusy(comm):
-                print("Move Backward")
-                comm.send('S',abs(action['move']))
-
-        #sends strafe right
-        elif action['strafe']<0:
-            if  not self.isBusy(comm):
-                print("Strafe right")
-                comm.send('V', abs(action['strafe']))
-
-        #sends strafe left
-        elif action['strafe']>0:
-            if  not self.isBusy(comm):
-                print("Strafe left")
-                comm.send('C', action['strafe'])
-
-        #sends turn right by a certain angle
-        elif action['angle']<0:
-            if  not self.isBusy(comm):
-                print("Turn right by " + str(action['angle']*2))
-                comm.send('D', abs(action['angle']))
-                self.busy = True
-                self.time = time.clock()
-                print self.time
-
-        #sends turn left by a certain angle
-        elif action['angle']>0:
-            if  not self.isBusy(comm):
-                print("Turn left by " + str(abs(action['angle']*2)))
-                comm.send('A', action['angle'])
-                self.busy = True
-                self.time = time.clock()
-                print self.time
-        # Else stop
-        else:
-            comm.send(' ',0)
-            self.busy = False
-
-        #sends close both grabbers at the same time
-        if action['grabber']== 0 :
-            print("Close both grabbers at once")
-            comm.send('X', (action['grabber']))
-
-        #sends close right grabber first
-        elif action['grabber']== 1:
-            print("Close right grabber first")
-            comm.send('X',0)
-
-        #sends close left grabber first
-        elif action['grabber']== 2:
-            print("Close left grabber first")
-            comm.send('X',0)
-
-        elif action['grabber']== 3:
-            print("Open grabber")
-            comm.send('Z',0)
-
-        #sends kick command
-        elif action['kick']>0:
-            print("Kick")
-            comm.send('Q',action['kick'])
-
-    def shutdown(self, comm):
-        pass
-
-class Attacker_Controller(Robot_Controller):
-    """
-    Attacker implementation.
     """
 
     def __init__(self):
@@ -295,7 +168,7 @@ class Attacker_Controller(Robot_Controller):
         Do the same setup as the Robot class, as well as anything specific to the Attacker.
         """
 
-        super(Attacker_Controller, self).__init__()
+        self.current_speed = 0
         self.busy = False
         self.old_action = {"move": None,
                            "angle": None,
@@ -498,7 +371,6 @@ if __name__ == '__main__':
     parser.add_argument("pitch", help="[0] Main pitch, [1] Secondary pitch")
     parser.add_argument("side", help="The side of our defender ['left', 'right'] allowed.")
     parser.add_argument("color", help="The color of our team - ['yellow', 'blue'] allowed.")
-    parser.add_argument("role", help="The role of the robot - ['attacker', 'defender'] allowed.")
     #store_true translates -n or --nocomms to True value for comms argument
     parser.add_argument(
         "-n", "--nocomms", help="Disables sending commands to the robot.", action="store_true")
@@ -507,8 +379,8 @@ if __name__ == '__main__':
     #Based on nocomms value ( -n / --nocomms) turns off or on the communications for arduino
     if args.nocomms:
         c = Controller(
-            pitch=int(args.pitch), color=args.color, our_side=args.side, comms=0, role=args.role).wow()
+            pitch=int(args.pitch), color=args.color, our_side=args.side, comms=0).wow()
     else:
         c = Controller(
-            pitch=int(args.pitch), color=args.color, our_side=args.side, role=args.role).wow()
-            
+            pitch=int(args.pitch), color=args.color, our_side=args.side).wow()
+
