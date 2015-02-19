@@ -11,9 +11,6 @@ class Planner:
         self._world.our_defender.catcher_area = {'width': 35, 'height': 20, 'front_offset': 18}  #10
         self._world.our_attacker.catcher_area = {'width': 35, 'height': 20, 'front_offset': 18}
 
-        # self._defender_defence_strat = DefenderDefence(self._world)
-        # self._defender_attack_strat = DefaultDefenderAttack(self._world)
-
         self._attacker_strategies = {'grab': [AttackerGrab],
                                      'shoot': [AttackerShoot]}
 
@@ -72,6 +69,7 @@ class Planner:
         their_defender = self._world.their_defender
         their_attacker = self._world.their_attacker
         ball = self._world.ball
+
         ## If ball is in our attacker zone, then grab the ball and shoot:
         if self._world.pitch.zones[our_attacker.zone].isInside(ball.x, ball.y) or \
                         self._attacker_current_strategy.current_state in ['AIM', 'OPEN', 'SHOOT']:

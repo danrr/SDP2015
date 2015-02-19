@@ -49,7 +49,7 @@ class Controller:
         # Set up camera for frames
         self.camera = Camera(port=video_port, pitch=self.pitch)
         frame = self.camera.get_frame()
-        #gets center of the frame based on the table croppings,
+        # gets center of the frame based on the table croppings,
         #TODO Check whether this is working correctly, as it gets the left and top coordinate from croppings and always substracts it
         center_point = self.camera.get_adjusted_center(frame)
 
@@ -75,7 +75,6 @@ class Controller:
         self.preprocessing = Preprocessing()
 
         #Planning code
-        self.defender = None
 
         self.robot = RobotController()
 
@@ -103,10 +102,10 @@ class Controller:
                 model_positions, regular_positions = self.vision.locate(frame)
                 model_positions = self.postprocessing.analyze(model_positions)
 
-                #TODO Planning code
+                # ###################### PLANNING ########################
                 # Find appropriate action
                 self.planner.update_world(model_positions)
-                
+
                 actions = self.planner.plan()
                 self.robot.execute(self.arduino, actions)
 
@@ -119,13 +118,14 @@ class Controller:
                 # Information about states
                 attackerState = (self.planner.attacker_state, self.planner.attacker_strat_state)
                 defenderState = (self.planner.defender_state, self.planner.defender_strat_state)
-                #TODO End of planning
+                # ######################## END PLANNING ###############################
+
                 # Use 'y', 'b', 'r' to change color.
                 c = waitKey(2) & 0xFF
                 fps = float(counter) / (time.clock() - timer)
                 # Draw vision content and actions
 
-                default_actions = {'move': 0, 'strafe': 0, 'angle': 0, 'grabber' : -1, 'kick':0}
+                default_actions = {'move': 0, 'strafe': 0, 'angle': 0, 'grabber': -1, 'kick': 0}
 
                 self.GUI.draw(
                     frame, model_positions, regular_positions, fps, attackerState,
@@ -147,14 +147,10 @@ class Controller:
 
 class RobotController(object):
     """
-
+        Defender Controller
     """
 
     def __init__(self):
-        """
-        Do the same setup as the Robot class, as well as anything specific to the Attacker.
-        """
-
         self.current_speed = 0
         self.busy = False
         self.old_action = {"move": None,
@@ -181,15 +177,15 @@ class RobotController(object):
         """
         if action["move"] and action["move"] == self.old_action["move"]:
             return
-        if action["move"] == 0 and self.old_action["move"] == 0\
-                and action["angle"] == 0 and self.old_action["angle"] == 0\
-                and action["strafe"] == 0 and self.old_action["strafe"] == 0\
+        if action["move"] == 0 and self.old_action["move"] == 0 \
+                and action["angle"] == 0 and self.old_action["angle"] == 0 \
+                and action["strafe"] == 0 and self.old_action["strafe"] == 0 \
                 and action["grabber"] == -1 and not action["kick"]:
             return
 
 
-        #Sends move forward
-        if action["move"]> 0:
+        # Sends move forward
+        if action["move"] > 0:
             print "trying to move"
             if not self.isBusy(comm):
                 self.old_action = action
@@ -199,16 +195,16 @@ class RobotController(object):
                 comm.send('W', action['move'])
 
         #Sends move backward
-        elif action['move']<0:
-            if  not self.isBusy(comm):
+        elif action['move'] < 0:
+            if not self.isBusy(comm):
                 self.old_action = action
                 self.time = time.clock()
                 self.flag = True
                 print("Move Backward")
-                comm.send('S',abs(action['move']))
+                comm.send('S', abs(action['move']))
 
         #sends strafe right
-        elif action['strafe']<0:
+        elif action['strafe'] < 0:
             if not self.isBusy(comm):
                 self.old_action = action
                 self.time = time.clock()
@@ -217,9 +213,9 @@ class RobotController(object):
                 comm.send('V', abs(action['strafe']))
 
         #sends strafe left
-        elif action['strafe']>0:
+        elif action['strafe'] > 0:
             if not self.isBusy(comm):
-                self.old_action = action#
+                self.old_action = action  #
                 self.time = time.clock()
                 self.flag = True
 
@@ -227,20 +223,20 @@ class RobotController(object):
                 comm.send('C', action['strafe'])
 
         #sends turn right by a certain angle
-        elif action['angle']<0:
-            if  not self.isBusy(comm):
+        elif action['angle'] < 0:
+            if not self.isBusy(comm):
                 self.old_action = action
-                print("Turn right by " + str(action['angle']*2))
+                print("Turn right by " + str(action['angle'] * 2))
                 comm.send('D', abs(action['angle']))
                 self.busy = True
                 self.time = time.clock()
                 self.flag = True
 
         #sends turn left by a certain angle
-        elif action['angle']>0:
-            if  not self.isBusy(comm):
+        elif action['angle'] > 0:
+            if not self.isBusy(comm):
                 self.old_action = action
-                print("Turn left by " + str(abs(action['angle']*2)))
+                print("Turn left by " + str(abs(action['angle'] * 2)))
                 comm.send('A', action['angle'])
                 self.busy = True
                 self.time = time.clock()
@@ -250,31 +246,31 @@ class RobotController(object):
         else:
             print "Sending stop"
             self.old_action = action
-            comm.send(' ',0)
+            comm.send(' ', 0)
             self.busy = False
 
         #sends close both grabbers at the same time
-        if action['grabber']== 0 :
+        if action['grabber'] == 0:
             self.old_action = action
             print("Close both grabbers at once")
             comm.send('X', (action['grabber']))
 
         #sends close right grabber first
-        elif action['grabber']== 1:
+        elif action['grabber'] == 1:
             self.old_action = action
             print("Close right grabber first")
-            comm.send('X',0)
+            comm.send('X', 0)
 
         #sends close left grabber first
-        elif action['grabber']== 2:
+        elif action['grabber'] == 2:
             self.old_action = action
             print("Close left grabber first")
-            comm.send('X',0)
+            comm.send('X', 0)
 
-        elif action['grabber']== 3:
+        elif action['grabber'] == 3:
             self.old_action = action
             print("Open grabber")
-            comm.send('Z',0)
+            comm.send('Z', 0)
 
         #sends kick command
         elif action['kick'] > 1:
@@ -287,7 +283,6 @@ class RobotController(object):
 
 
 class Arduino:
-
     def __init__(self, port, rate, timeOut, comms):
         """
             [int]comms                      Sets the communications with the arduino, If 0 and using set write function
@@ -314,10 +309,10 @@ class Arduino:
                     print ("Continuing without comms.")
                     print (e)
                     self.comms = 0
-                    #raise
+                    # raise
         else:
             print ("Communication with Arduino is turned off")
-            #self.write('A_RUN_KICK\n')
+            # self.write('A_RUN_KICK\n')
             #self.send('A_RUN_ENGINE %d %d\n' % (0, 0))
             #self.write('D_RUN_KICK\n')
             #self.send('D_RUN_ENGINE %d %d\n' % (0, 0))
@@ -326,12 +321,12 @@ class Arduino:
     def send(self, string, data):
         if self.comms == 1:
             # print ("Sending message to Arduino: " + string + str(data))
-            self.serial.write(string+chr(data))
+            self.serial.write(string + chr(data))
 
     def heartBeat(self):
-        #TODO refactor this method, waiting for response from heartbeat
+        # TODO refactor this method, waiting for response from heartbeat
         bits_toSend = "X"
-        self.serial.write("L"+bits_toSend)
+        self.serial.write("L" + bits_toSend)
         time.sleep(0.3)
         bits_waiting = self.serial.inWaiting()
         if (bits_waiting):
@@ -351,9 +346,10 @@ class Arduino:
 
 
 if __name__ == '__main__':
-    #argparse is used for including help -h to python command line, also to translate arguments like nocomms
+    # argparse is used for including help -h to python command line, also to translate arguments like nocomms
     #from -n to True or False
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("pitch", help="[0] Main pitch, [1] Secondary pitch")
     parser.add_argument("side", help="The side of our defender ['left', 'right'] allowed.")
