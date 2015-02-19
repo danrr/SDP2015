@@ -142,21 +142,13 @@ class Controller:
                 self.arduino.close()
 
         except:
-            #TODO Planning code
-            if self.defender is not None:
-                self.defender.shutdown(self.arduino)
-            if self.robot is not None:
-                self.robot.shutdown(self.arduino)
+            self.robot.shutdown(self.arduino)
             raise
 
         finally:
             # Write the new calibrations to a file.
             tools.save_colors(self.pitch, self.calibration)
-            #TODO Planning code
-            if self.robot is not None:
-                self.robot.shutdown(self.arduino)
-            if self.defender is not None:
-                self.defender.shutdown(self.arduino)
+            self.robot.shutdown(self.arduino)
 
 class RobotController(object):
     """
