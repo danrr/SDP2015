@@ -8,7 +8,7 @@
   void motorForward(int motorNum, int motorPower); //Makes Motor motorNum go forwards at a power of motorPower
   void motorBackward(int motorNum, int motorPower); //Makes Motor motorNum go backwards at a power of motorPower
   void motorStop(int motorNum); //Makes Motor motorNum stop
-  void motorBreak(int motorNum); //Makes Motor motorNum break (possibly in more ways than the good one!)
+  void motorBrake(int motorNum); //Makes Motor motorNum brake.
   void motorAllStop(void);	//Makes all motors stop
   void setPWMpin(int portNum, int power); // sets the output pin of port portNum to power%.
   int readAnalogSensorData(int portNum); //reads the analog value of the input pin on port portNum.

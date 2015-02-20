@@ -12,6 +12,7 @@
 #include <Adafruit_9DOF.h>
 #include <Adafruit_L3GD20_U.h>
 
+
 byte cmd, data, response;
 Servo kicker;
 unsigned long current_millis;
@@ -354,16 +355,22 @@ void turnLeft(byte tolerance) {
     headingDiff = 360 + headingDiff;
   }
   if (headingDiff < tolerance) {
-    motorStop(_LEFT_DRIVE);
-    motorStop(_RIGHT_DRIVE);
-    voidCommand(0);
+    // Place the motors in braking mode. (This is risky as f**k.)
+    motorBrake(_LEFT_DRIVE);
+    motorBrake(_RIGHT_DRIVE);
+    motorBrake(_BACK_DRIVE);
     response = 0xff;
+
+    // schedule the brakes to be released.
+    commands[0].millis = millis() + 500;
+    commands[0].functionPtr = &releaseBrakes;
+    commands[0].data = 1;
   }
   else {    
     setRotationalSpeed(-getTurnSpeed(headingDiff));
     commands[0].millis = millis() + _TURN_DELAY;
   }
-}  
+} 
 
 void turnRight(byte tolerance) {
   //check compass and do things
@@ -372,15 +379,34 @@ void turnRight(byte tolerance) {
     headingDiff = 360 + headingDiff;
   }
   if (headingDiff < tolerance) {
-    motorStop(_LEFT_DRIVE);
-    motorStop(_RIGHT_DRIVE);
-    voidCommand(0);
+     // Place the motors in braking mode. (This is risky as f**k.)
+    motorBrake(_LEFT_DRIVE);
+    motorBrake(_RIGHT_DRIVE);
+    motorBrake(_BACK_DRIVE);
     response = 0xff;
+
+    // schedule the brakes to be released.
+    commands[0].millis = millis() + 500;
+    commands[0].functionPtr = &releaseBrakes;
+    commands[0].data = 1;
   }
   else {
     setRotationalSpeed(getTurnSpeed(headingDiff));
     commands[0].millis = millis() + _TURN_DELAY;
   }
+}
+
+void releaseBrakes(byte data) {
+  if (data == 1) {
+    motorStop(_LEFT_DRIVE);
+    motorStop(_RIGHT_DRIVE);
+    motorStop(_BACK_DRIVE);
+  }
+  else if (data == 2) {
+    motorStop(_LEFT_GRABBER);
+    motorStop(_RIGHT_GRABBER);
+  }
+  voidCommand(0);
 }
 
 void strafe(byte data) {
@@ -499,7 +525,7 @@ int getCurrentHeading() {
 }
 
 byte getTurnSpeed(int headingDiff) {
-  int turnSpeed = headingDiff / 4;
+  int turnSpeed = headingDiff;
   if (turnSpeed < 50) {
     turnSpeed = 50;
   }

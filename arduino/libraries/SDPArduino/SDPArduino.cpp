@@ -81,7 +81,7 @@ void motorStop(int motorNum) { // stop motor motorNum
 
 //experimental...
 
-void motorBreak(int motorNum) {
+void motorBrake(int motorNum) {
   if (motorNum >= 0 and motorNum <= 5) {
     int motorMode = 1;
     byte motor1 = motorNum<<5 | 16 | motorMode<<1;
