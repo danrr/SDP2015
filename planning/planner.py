@@ -10,6 +10,7 @@ class Planner:
     def __init__(self, our_side, pitch_num):
         self._world = World(our_side, pitch_num)
         # measurement used 1cm = 2.28px
+        # TODO: tinker with these to get the proper grabber areas
         self._world.our_defender.catcher_area = {'width': 35, 'height': 20, 'front_offset': 18}  # 10
         self._world.our_attacker.catcher_area = {'width': 35, 'height': 20, 'front_offset': 18}
 
@@ -20,30 +21,50 @@ class Planner:
         self._world.update_positions(position_dictionary)
 
     def plan(self):
-        # move flood stuff into here using self.state
+        # TODO: maybe move flood stuff into here using self.state
+        # TODO: take into account where ball was seen last when it's hidden?
 
         # if ball is in our zone:
         if self._world.pitch.zones[self._world.our_defender.zone].isInside(self._world.ball.x, self._world.ball.y):
+
             # if grabber closed - open grabber
-            # if we don't have ball
+            if self._world.our_defender.catcher == "closed" and not self._world.our_defender.has_ball(self._world.ball):
+                self._world.our_defender.catcher = "open"
+                return open_catcher()
+
+            if self._world.our_defender.has_ball(self._world.ball):
+                # TODO: implement passing
+                pass  # get it?
+                return stop()
+            else:
                 # if ball in our grabber area - stop and grab
-                # if ball not moving
-                    # if close to ball - forward slow
-                    # if far from ball - increase speed
-                # if ball moving
-                    # try and intercept?
-            # else pass?
-            return stop()
+                if self._world.our_defender.can_catch_ball(self._world.ball):
+                    # TODO: make grabbers close depending on ball position
+                    self._world.our_defender.catcher = "closed"
+                    return grab_ball_center()
+
+                # if ball moving fast
+                if self._world.ball.velocity > BALL_VELOCITY:
+                    # try and intercept
+                    predicted_y = predict_y_intersection(self._world,
+                                                         self._world.our_defender.x,
+                                                         self._world.ball,
+                                                         bounce=False)
+                    if predicted_y:
+                        distance_to_move = self._world.our_defender.y - predicted_y
+                        angle = pi/2 if distance_to_move > 0 else -pi/2
+                        return move(distance_to_move, angle, strafe_ok=True, backwards_ok=False)
+                    if not predicted_y:
+                        return self.go_to_ball()
+                else:
+                    return self.go_to_ball()
 
         # if ball is in enemy attacker zone, panic:
         elif self._world.pitch.zones[self._world.their_attacker.zone].isInside(self._world.ball.x, self._world.ball.y):
-            # TODO: extract into method (2)
-            # if not facing forward - turn to face forward
-            angle = 180 * self._world.our_defender.get_rotation_to_point(
-                self._world.pitch.width / 2, self._world.our_defender.y
-                ) / (2 * math.pi)
-            if abs(angle) > 2:
-                return move(0, angle)
+
+            action = self.close_and_turn()
+            if action != stop():
+                return action
 
             predicted_y = None
             # if the ball is moving fast, attempt to move to intercept ball
@@ -55,7 +76,7 @@ class Planner:
 
             # TODO: better way of determining if attacker has ball (is ball invisible or in front of attacker maybe)
             # if ball is moving slowly or not towards us attempt to intercept shot
-            elif predicted_y is None:
+            if self._world.ball.velocity <= BALL_VELOCITY or predicted_y is None:
                 predicted_y = predict_y_intersection(self._world,
                                                      self._world.our_defender.x,
                                                      self._world.their_attacker,
@@ -63,57 +84,64 @@ class Planner:
             # if we can intercept
             if predicted_y:
                 distance_to_move = self._world.our_defender.y - predicted_y
-                # TODO: extract into method (1)
-                if distance_to_move > DISTANCE_MATCH_THRESHOLD:
-                    angle = pi/2 if distance_to_move > 0 else -pi/2
-                    return move(distance_to_move, angle, strafe_ok=True, backwards_ok=False)
-            # move to center of goal
+                angle = pi/2 if distance_to_move > 0 else -pi/2
+                return move(distance_to_move, angle, strafe_ok=True, backwards_ok=False)
+            # move to center of goal if there is nothing to do
             return self.align_to_goal()
         else:
             return self.reset_to_goal()
 
+    def go_to_ball(self):
+        """
+        Makes robot head towards the ball
+        """
+        angle = self._world.our_defender.get_rotation_to_point(self._world.ball.x, self._world.ball.y)
+        action = move(0, angle)
+        if action == stop():
+            distance_to_ball = self._world.our_defender.get_displacement_to_point(self._world.ball.x, self._world.ball.y)
+            # if ball far away move fast, else move slow
+            action = move(distance_to_ball, 0, careful=distance_to_ball > 5 * DISTANCE_MATCH_THRESHOLD)
+        return action
+
     def reset_to_goal(self):
         """
-        Resets robot to face opponent attacker and and move to the center of the goal
+        Returns actions that make robot face opponent attacker and and move to the center of the goal
         """
-        action = stop()
 
-        # if grabber open - close grabber
-        if self._world.our_defender.catcher == "open":
-            action = grab_ball_center()
-            self._world.our_defender.catcher = "close"
+        action = self.close_and_turn()
 
-        # TODO: extract into method (2)
-        # if not facing forward - turn to face forward
-        angle = 180 * self._world.our_defender.get_rotation_to_point(
-            self._world.pitch.width / 2, self._world.our_defender.y
-            ) / (2 * math.pi)
-        if abs(angle) > 2:
-            action = move(0, angle, grabber=action["grabber"])
-
-        # do both previous actions at once
-        # if neither of those actions need to be done
+        # if already facing the opponent
         if action == stop():
             action = self.align_to_goal()
         return action
 
-    def align_to_goal(self):
+    def close_and_turn(self):
         """
-        Does the actual moving to the goal line
+        Returns actions to close the grabber and turns the robot to face the opponent
         """
         action = stop()
+        if self._world.our_defender.catcher == "open":
+            action = grab_ball_center()
+            self._world.our_defender.catcher = "closed"
+
+        # if not facing forward - turn to face forward
+        angle = self._world.our_defender.get_rotation_to_point(self._world.pitch.width / 2, self._world.our_defender.y)
+        action = move(0, angle, grabber=action["grabber"])
+        return action
+
+    def align_to_goal(self):
+        """
+        Returns actions that move a robot facing the opponent to the goal line
+        """
         # if not aligned with the center of the goal - strafe to center
         distance_to_move = self._world.our_defender.y - self._world.pitch.height / 2
 
-        # are we in the centre?#
-        # TODO: extract into method (1)
-        if distance_to_move > DISTANCE_MATCH_THRESHOLD:
-            angle = pi/2 if distance_to_move > 0 else -pi/2
-            action = move(distance_to_move, angle, strafe_ok=True, backwards_ok=False)
-        else:
+        angle = pi/2 if distance_to_move > 0 else -pi/2
+        action = move(distance_to_move, angle, strafe_ok=True, backwards_ok=False)
+        # are we in the centre?
+        if action == stop():
             # move back to goal line
             distance_to_move = self._world.our_defender - self.goal_line
-            if distance_to_move > DISTANCE_MATCH_THRESHOLD:
-                angle = pi
-                action = move(distance_to_move, angle, strafe_ok=False, backwards_ok=True)
+            angle = pi
+            action = move(distance_to_move, angle, strafe_ok=False, backwards_ok=True)
         return action
