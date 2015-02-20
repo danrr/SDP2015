@@ -171,6 +171,8 @@ class RobotController(object):
         """
         Execute robot action.
         """
+
+        # TODO: try and make this better
         if action["move"] and action["move"] == self.old_action["move"]:
             return
         if action["move"] == 0 and self.old_action["move"] == 0 \
