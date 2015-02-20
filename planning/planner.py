@@ -33,18 +33,18 @@ class Planner:
                 # if ball moving
                     # try and intercept?
             # else pass?
-            return do_nothing()
+            return stop()
         # if ball is in enemy attacker zone, panic:
-        if self._world.pitch.zones[their_attacker.zone].isInside(ball.x, ball.y):
+        elif self._world.pitch.zones[their_attacker.zone].isInside(ball.x, ball.y):
             # if opponent have ball i.e is the ball not visible or in front of opponent - strafe to intercept shot
             # else
                 # if ball moving towards us - move to y intercept
                 # else move to y coor
-            return do_nothing()
+            return stop()
         else:
             # do both at once
                 # if grabber open - close grabber
                 # if not facing forward - turn to face forward
             # if not aligned with the center of the goal - strafe to center
             # if too far forward - move back
-            return do_nothing()
+            return stop()

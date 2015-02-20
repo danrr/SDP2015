@@ -64,7 +64,7 @@ class DefenderDefence(Strategy):
         if has_matched(self.our_defender, x=self.goal_front_x, y=self.our_goal.y):
             # We're there. Advance the states and formulate next action.
             self.current_state = self.DEFEND_GOAL
-            return do_nothing()
+            return stop()
         else:
             displacement, angle = self.our_defender.get_direction_to_point(
                 self.goal_front_x, self.our_goal.y)
@@ -119,7 +119,7 @@ class AttackerGrab(Strategy):
         self.NEXT_ACTION_MAP = {
             self.GO_TO_BALL: self.position,
             #self.GRAB_BALL: self.grab,
-            self.GRABBED: do_nothing
+            self.GRABBED: stop
         }
 
         self.our_attacker = self.world.our_attacker
@@ -165,7 +165,7 @@ class DefenderGrab(Strategy):
             self.DEFEND: self.defend,
             self.GO_TO_BALL: self.position,
             self.GRAB_BALL: self.grab,
-            self.GRABBED: do_nothing
+            self.GRABBED: stop
         }
 
         self.our_defender = self.world.our_defender
@@ -185,7 +185,7 @@ class DefenderGrab(Strategy):
                 return move(displacement, angle, strafe_ok=True, backwards_ok=True)
         
         self.current_state = self.GO_TO_BALL
-        return do_nothing()
+        return stop()
 
     def position(self):
         displacement, angle = self.our_defender.get_direction_to_point(self.ball.x, self.ball.y)
@@ -195,14 +195,14 @@ class DefenderGrab(Strategy):
             return open_catcher()
         if self.our_defender.can_catch_ball(self.ball):
             self.current_state = self.GRAB_BALL
-            return do_nothing()
+            return stop()
         else:
             return move(displacement, angle, careful=True)
 
     def grab(self):
         if self.our_defender.has_ball(self.ball):
             self.current_state = self.GRABBED
-            return do_nothing()
+            return stop()
         else:
             self.our_defender.catcher = 'closed'
             # the angle by which the robot needs to rotate in order to achieve alignment with the ball            
@@ -237,7 +237,7 @@ class AttackerShoot(Strategy):
 
     def sleep(self):
         time.sleep(0.650)
-        return do_nothing()
+        return stop()
 
     def aim(self): 
         '''

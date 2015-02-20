@@ -147,7 +147,7 @@ def move(displacement, angle, strafe_ok=False, backwards_ok=False, careful=False
 
     if displacement:
         if displacement < DISTANCE_MATCH_THRESHOLD:
-            return do_nothing()
+            return stop()
 
         elif abs(angle) > angle_thresh:
             angle = int(((angle / pi) * 180) / 2)
@@ -170,5 +170,5 @@ def move(displacement, angle, strafe_ok=False, backwards_ok=False, careful=False
             return {'move': 0, 'strafe': 0, 'angle': 0, 'grabber': grabber, 'kick': 0}
 
 
-def do_nothing():
+def stop():
     return {'move': 0, 'strafe': 0, 'angle': 0, 'grabber': -1, 'kick': 0}
