@@ -11,19 +11,6 @@ class Planner:
         self._world.our_defender.catcher_area = {'width': 35, 'height': 20, 'front_offset': 18}  #10
         self._world.our_attacker.catcher_area = {'width': 35, 'height': 20, 'front_offset': 18}
 
-        self._attacker_strategies = {'grab': [AttackerGrab],
-                                     'shoot': [AttackerShoot]}
-
-        self._defender_strategies = {'defence': [DefenderDefence],
-                                     'grab': [DefenderGrab],
-                                     'pass': [DefenderPass]}
-
-        self._defender_state = 'defence'
-        self._defender_current_strategy = DefenderDefence(self._world)
-
-        self._attacker_state = 'grab'
-        self._attacker_current_strategy = AttackerGrab(self._world)
-
     def update_world(self, position_dictionary):
         self._world.update_positions(position_dictionary)
 
@@ -34,42 +21,30 @@ class Planner:
         their_attacker = self._world.their_attacker
         ball = self._world.ball
 
-        # If ball is in our attacker zone, then grab the ball and shoot:
-        if self._world.pitch.zones[our_attacker.zone].isInside(ball.x, ball.y) or \
-                        self._attacker_current_strategy.current_state in ['AIM', 'OPEN', 'SHOOT']:
-            print self._attacker_current_strategy.current_state
-
-            # Check if we should switch from a grabbing to a scoring strategy.
-            if self._attacker_state == 'grab' and self._attacker_current_strategy.current_state == 'GRABBED':
-                print "[ATTACKER]: we grabbed the ball so go ahead and shoot"
-                self._attacker_state = 'shoot'
-                self._attacker_current_strategy = AttackerShoot(self._world)
-
-            # If we're not ready to change to scoring stay in 'grab'
-            elif self._attacker_state == 'grab':
-                # Switch to careful mode if the ball is too close to the wall.
-
-                # print "[ATTACKER]: grab"
-                self._attacker_current_strategy = AttackerGrab(self._world)
-
-            #If we've finished shooting
-            elif self._attacker_state == 'shoot' and self._attacker_current_strategy.current_state == 'FINISHED':
-                self._attacker_state = 'grab'
-            #     self._attacker_current_strategy = AttackerGrab(self._world)
-            #     print "[ATTACKER]: we finished kicking the ball"
-
-            # elif self._attacker_state == 'shoot' and\
-            #         not our_attacker.can_catch_ball(self._world.ball):
-            #     self._attacker_state = 'grab'
-            #     self._attacker_current_strategy = AttackerGrab(self._world)
-
-            return self._attacker_current_strategy.generate()
-
+        # take states into account
+        # if ball is in our zone:
+        if self._world.pitch.zones[our_defender.zone].isInside(ball.x, ball.y):
+            # if grabber closed - open grabber
+            # if we don't have ball
+                # if ball in our grabber area - stop and grab
+                # if ball not moving
+                    # if close to ball - forward slow
+                    # if far from ball - increase speed
+                # if ball moving
+                    # try and intercept?
+            # else pass?
+            return do_nothing()
+        # if ball is in enemy attacker zone, panic:
+        if self._world.pitch.zones[their_attacker.zone].isInside(ball.x, ball.y):
+            # if opponent have ball i.e is the ball not visible or in front of opponent - strafe to intercept shot
+            # else
+                # if ball moving towards us - move to y intercept
+                # else move to y coor
+            return do_nothing()
         else:
-            # print "[ATTACKER]: motor speed on 0"
-            # print our_attacker.catcher
-            if our_attacker.catcher == 'open':
-                our_attacker.catcher = 'closed'
-                return grab_ball_center()
-            else:
-                return do_nothing()
+            # do both at once
+                # if grabber open - close grabber
+                # if not facing forward - turn to face forward
+            # if not aligned with the center of the goal - strafe to center
+            # if too far forward - move back
+            return do_nothing()
