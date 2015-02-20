@@ -120,7 +120,7 @@ def has_matched(robot, x=None, y=None, angle=None,
     return dist_matched and angle_matched
 
 
-def move(displacement, angle, strafe_ok=False, backwards_ok=False, careful=False):
+def move(displacement, angle, strafe_ok=False, backwards_ok=False, careful=False, grabber=-1):
     """
     Move in a heading given by "angle" for a distance "displacement". If grabbing the ball, strafe_ok and backwards_ok
     should be false so the robot can orientate itself to face the ball. Otherwise it should be able to strafe or reverse
@@ -151,23 +151,23 @@ def move(displacement, angle, strafe_ok=False, backwards_ok=False, careful=False
 
         elif abs(angle) > angle_thresh:
             angle = int(((angle / pi) * 180) / 2)
-            return {'move': 0, 'strafe': 0, 'angle': angle, 'grabber': -1, 'kick': 0}
+            return {'move': 0, 'strafe': 0, 'angle': angle, 'grabber': grabber, 'kick': 0}
 
         else:
             speed = 40
             if not moving_sideways:
-                return {'move': speed, 'strafe': 0, 'angle': 0, 'grabber': -1, 'kick': 0}
+                return {'move': speed, 'strafe': 0, 'angle': 0, 'grabber': grabber, 'kick': 0}
             else:
-                return {'move': 0, 'strafe': speed, 'angle': 0, 'grabber': -1, 'kick': 0}
+                return {'move': 0, 'strafe': speed, 'angle': 0, 'grabber': grabber, 'kick': 0}
 
     else:
 
         if abs(angle) > angle_thresh:
             angle = int(((angle / pi) * 180) / 2)
-            return {'move': 0, 'strafe': 0, 'angle': angle, 'grabber': -1, 'kick': 0}
+            return {'move': 0, 'strafe': 0, 'angle': angle, 'grabber': grabber, 'kick': 0}
 
         else:
-            return {'move': 0, 'strafe': 0, 'angle': 0, 'grabber': -1, 'kick': 0}
+            return {'move': 0, 'strafe': 0, 'angle': 0, 'grabber': grabber, 'kick': 0}
 
 
 def do_nothing():
