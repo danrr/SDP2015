@@ -29,10 +29,6 @@ class Controller:
             [int] pitch                     0 - main pitch, 1 - secondary pitch , get's the correct croppings from json
             [string] our_side               the side we're on - 'left' or 'right'
             *[int] port                     The camera port to take the feed from
-            *[Robot_Controller] attacker    Robot controller object - Attacker Robot has a RED
-                                            power wire
-            *[Robot_Controller] defender    Robot controller object - Defender Robot has a YELLOW
-                                            power wire
             [int]comms                      Sets the communications with the arduino, If 0 and using set write function
                                             no actual write will be done to arduino, If 1 (or higher) commands will
                                             be able to be sent to Arduino
@@ -116,8 +112,8 @@ class Controller:
                 }
 
                 # Information about states
-                attackerState = (self.planner.attacker_state, self.planner.attacker_strat_state)
-                defenderState = (self.planner.defender_state, self.planner.defender_strat_state)
+                attackerState = "whatever"
+                defenderState = "whatever"
                 # ######################## END PLANNING ###############################
 
                 # Use 'y', 'b', 'r' to change color.
@@ -183,7 +179,6 @@ class RobotController(object):
                 and action["grabber"] == -1 and not action["kick"]:
             return
 
-
         # Sends move forward
         if action["move"] > 0:
             print "trying to move"
@@ -194,7 +189,7 @@ class RobotController(object):
                 print("Move forward")
                 comm.send('W', action['move'])
 
-        #Sends move backward
+        # Sends move backward
         elif action['move'] < 0:
             if not self.isBusy(comm):
                 self.old_action = action

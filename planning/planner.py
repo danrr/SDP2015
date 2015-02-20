@@ -19,46 +19,10 @@ class Planner:
                                      'pass': [DefenderPass]}
 
         self._defender_state = 'defence'
-        self._defender_current_strategy = self.choose_defender_strategy(self._world)
+        self._defender_current_strategy = DefenderDefence(self._world)
 
         self._attacker_state = 'grab'
-        self._attacker_current_strategy = self.choose_attacker_strategy(self._world)
-
-    # Provisional. Choose the first strategy in the applicable list.
-    def choose_attacker_strategy(self, world):
-        next_strategy = self._attacker_strategies[self._attacker_state][0]
-        return next_strategy(world)
-
-    # Provisional. Choose the first strategy in the applicable list.
-    def choose_defender_strategy(self, world):
-        next_strategy = self._defender_strategies[self._defender_state][0]
-        return next_strategy(world)
-
-    @property
-    def attacker_strat_state(self):
-        return self._attacker_current_strategy.current_state
-
-    @property
-    def defender_strat_state(self):
-        return self._defender_current_strategy.current_state
-
-    @property
-    def attacker_state(self):
-        return self._attacker_state
-
-    @attacker_state.setter
-    def attacker_state(self, new_state):
-        assert new_state in ['defence', 'attack']
-        self._attacker_state = new_state
-
-    @property
-    def defender_state(self):
-        return self._defender_state
-
-    @defender_state.setter
-    def defender_state(self, new_state):
-        assert new_state in ['defence', 'attack']
-        self._defender_state = new_state
+        self._attacker_current_strategy = AttackerGrab(self._world)
 
     def update_world(self, position_dictionary):
         self._world.update_positions(position_dictionary)
@@ -70,7 +34,7 @@ class Planner:
         their_attacker = self._world.their_attacker
         ball = self._world.ball
 
-        ## If ball is in our attacker zone, then grab the ball and shoot:
+        # If ball is in our attacker zone, then grab the ball and shoot:
         if self._world.pitch.zones[our_attacker.zone].isInside(ball.x, ball.y) or \
                         self._attacker_current_strategy.current_state in ['AIM', 'OPEN', 'SHOOT']:
             print self._attacker_current_strategy.current_state
