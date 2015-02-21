@@ -16,6 +16,11 @@
 byte cmd, data, response;
 Servo kicker;
 unsigned long current_millis;
+
+// For timing purposes
+unsigned long current_micros;
+unsigned long old_micros;
+
 int targetHeading, headingDiff;
 
 int turnPower;
@@ -53,6 +58,7 @@ Command commands[7];
 #define _TURN_RIGHT 'D'
 #define _STRAFE_LEFT 'C'
 #define _STRAFE_RIGHT 'V'
+#define _GET_TIMING 'T'
 
 #define _LEFT_DRIVE 2
 #define _RIGHT_DRIVE 4
@@ -111,12 +117,19 @@ void initSensors()
 */
 
 void loop() {
+  updateTimings();
   fetchCommand();
   if (cmd) {
     decodeCommand();
   }
   doStoredCommands();
   respond();
+}
+
+void updateTimings() {
+  current_millis = millis();
+  old_micros = current_micros;
+  current_micros = micros();
 }
 
 /*
@@ -138,32 +151,33 @@ void fetchCommand() {
 */
 
 void decodeCommand() {
-  int deltaAngle;    
+  int deltaAngle;
+
   switch(cmd) {
     // movement commands
     case _FORWARD:
-      commands[0].millis = millis();
+      commands[0].millis = current_millis;
       commands[0].functionPtr = &moveForward;
       commands[0].data = data;
       targetHeading = getCurrentHeading();
       break;
 
     case _BACKWARD:
-      commands[0].millis = millis();
+      commands[0].millis = current_millis;
       commands[0].functionPtr = &moveBackward;
       commands[0].data = data;
       targetHeading = getCurrentHeading();
       break;
 
     case _STOP:
-      commands[0].millis = millis();
+      commands[0].millis = current_millis;
       commands[0].functionPtr = &driveMotorStop;
       commands[0].data = data;
       break;
 
     case _TURN_LEFT:
       turnPower = -30;
-      commands[0].millis = millis();
+      commands[0].millis = current_millis;
       commands[0].functionPtr = &turnLeft;
       deltaAngle = (int)data * 2;
       targetHeading = (getCurrentHeading()  + deltaAngle) % 360;
@@ -172,7 +186,7 @@ void decodeCommand() {
 
     case _TURN_RIGHT:
       turnPower = 30;
-      commands[0].millis = millis();
+      commands[0].millis = current_millis;
       commands[0].functionPtr = &turnRight;
       deltaAngle = (int)data * 2;
       targetHeading = (getCurrentHeading()  - deltaAngle) % 360;
@@ -180,7 +194,7 @@ void decodeCommand() {
       break;
 
     case _STRAFE_LEFT:
-      commands[0].millis = millis();
+      commands[0].millis = current_millis;
       commands[0].functionPtr = &strafe;
       commands[0].data = data;
       targetHeading = getCurrentHeading();
@@ -188,14 +202,12 @@ void decodeCommand() {
       break;
 
     case _STRAFE_RIGHT:
-      commands[0].millis = millis();
+      commands[0].millis = current_millis;
       commands[0].functionPtr = &strafe;
       commands[0].data = data;
       targetHeading = getCurrentHeading();
       motorForward(_BACK_DRIVE, data);
       break;
-
-
 
     // kick commands
     case _KICK:
@@ -203,7 +215,6 @@ void decodeCommand() {
         data = 100;
       }
       kicker.write(90 - 4 * data / 100.0);
-      current_millis = millis();
       commands[1].millis = current_millis + 400;
       commands[2].millis = current_millis + 800;
       commands[3].millis = current_millis + 1000;
@@ -212,7 +223,6 @@ void decodeCommand() {
 
     // grabber commands
     case _GRABBER_OPEN:
-      current_millis = millis();
       commands[4].millis = current_millis;
       commands[4].functionPtr = &startOpenGrabber;
 
@@ -226,7 +236,6 @@ void decodeCommand() {
       break;
 
     case _GRABBER_CLOSE:
-      current_millis = millis();
       commands[4].millis = current_millis;
       commands[4].functionPtr = &startCloseGrabber;
 
@@ -246,13 +255,17 @@ void decodeCommand() {
     case _GET_HEADING:
       returnHeading();
       break;
+
+    case _GET_TIMING:
+      returnTiming();
+      break;
      
    }
 }
 
 void doStoredCommands() {
   for (short i = 0; i < 7; i++) {
-    if (commands[i].millis && commands[i].millis < millis()) {
+    if (commands[i].millis && commands[i].millis < current_millis) {
       if (commands[i].functionPtr != NULL) {
         (*commands[i].functionPtr)(commands[i].data);
       }
@@ -492,6 +505,17 @@ void returnHeading() {
   response = (byte) (getCurrentHeading() / 2); 
 }
 
+void returnTiming() {
+  int timeDiff = (current_micros - old_micros);
+  if (timeDiff > 255) {
+    timeDiff = 255;
+  }
+  if (timeDiff == 0) {
+    timeDiff = 1;
+  }
+  response = (byte) timeDiff;
+}
+
 /*
   getHeadingDiff:
 
@@ -538,7 +562,7 @@ byte getTurnSpeed(int headingDiff) {
 byte getHeadingTolerance(int currentHeading, int targetHeading) {
   int deltaAngle;
   deltaAngle = getHeadingDiff(targetHeading, currentHeading);
-  return 5 + abs(deltaAngle) / 5;
+  return 5 + abs(deltaAngle) / 10;
 }
 
 /*
