@@ -140,8 +140,8 @@ def move(displacement, angle, strafe_ok=False, backwards_ok=False, careful=False
     # If heading is between 135 and 45 degrees the robot should strafe, therefore the heading needs to be adjusted by
     # 90 degrees
     if strafe_ok and (3 * pi) / 4 >= abs(angle) >= pi / 4:
+        moving_sideways = "left" if angle > 0 else "right"
         angle = angle - (pi / 2) if angle > 0 else angle + (pi / 2)
-        moving_sideways = True
         if angle < 0:
             moving_backwards = True
 
@@ -154,18 +154,19 @@ def move(displacement, angle, strafe_ok=False, backwards_ok=False, careful=False
             return {'move': 0, 'strafe': 0, 'angle': angle, 'grabber': grabber, 'kick': 0}
 
         else:
-            speed = 40
-            if not moving_sideways:
-                return {'move': speed, 'strafe': 0, 'angle': 0, 'grabber': grabber, 'kick': 0}
-            else:
+            speed = 50
+            if moving_sideways:
+                speed *= -1 if moving_sideways == "left" else 1
                 return {'move': 0, 'strafe': speed, 'angle': 0, 'grabber': grabber, 'kick': 0}
+            else:
+                speed *= -1 if moving_backwards else 1
+                return {'move': speed, 'strafe': 0, 'angle': 0, 'grabber': grabber, 'kick': 0}
 
     else:
 
         if abs(angle) > angle_thresh:
             angle = int(((angle / pi) * 180) / 2)
             return {'move': 0, 'strafe': 0, 'angle': angle, 'grabber': grabber, 'kick': 0}
-
         else:
             return {'move': 0, 'strafe': 0, 'angle': 0, 'grabber': grabber, 'kick': 0}
 

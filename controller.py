@@ -1,3 +1,4 @@
+from planning.utilities import stop
 from vision.vision import Vision, Camera, GUI
 from planning.planner import Planner
 from postprocessing.postprocessing import Postprocessing
@@ -80,6 +81,7 @@ class Controller:
         """
         counter = 1L
         timer = time.clock()
+        default_actions = {'move': 0, 'strafe': 0, 'angle': 0, 'grabber': -1, 'kick': 0}
 
         try:
             c = True
@@ -103,7 +105,10 @@ class Controller:
                 self.planner.update_world(model_positions)
 
                 actions = self.planner.plan()
-                self.robot.execute(self.arduino, actions)
+                if actions:
+                    self.robot.execute(self.arduino, actions)
+                else:
+                    actions = default_actions
 
                 # Information about the grabbers from the world
                 grabbers = {
@@ -112,17 +117,15 @@ class Controller:
                 }
 
                 # Information about states
-                attackerState = "whatever"
+                attackerState = ["No idea", "No idea"]
                 defenderState = "whatever"
                 # ######################## END PLANNING ###############################
 
                 # Use 'y', 'b', 'r' to change color.
                 c = waitKey(2) & 0xFF
                 fps = float(counter) / (time.clock() - timer)
+
                 # Draw vision content and actions
-
-                default_actions = {'move': 0, 'strafe': 0, 'angle': 0, 'grabber': -1, 'kick': 0}
-
                 self.GUI.draw(
                     frame, model_positions, regular_positions, fps, attackerState,
                     defenderState, default_actions, actions, grabbers,
@@ -156,16 +159,23 @@ class RobotController(object):
         self.flag = False
 
     def isBusy(self, comm):
-        bits_waiting = comm.serial.inWaiting()
-        if bits_waiting:
-            a = ord(comm.serial.read())
-            if a == 255:
+        try:
+            bits_waiting = comm.serial.inWaiting()
+            if bits_waiting:
+                a = ord(comm.serial.read())
+                if a == 255:
+                    self.busy = False
+            if self.time + 0.4 < time.clock() and self.flag:
+                print "time out"
                 self.busy = False
-        if self.time + 0.4 < time.clock() and self.flag:
-            print "time out"
-            self.busy = False
-            self.flag = False
-        return self.busy
+                self.flag = False
+            return self.busy
+        except AttributeError:
+            if self.time + 0.4 < time.clock() and self.flag:
+                print "time out"
+                self.busy = False
+                self.flag = False
+            return self.busy
 
     def execute(self, comm, action):
         """
@@ -173,12 +183,9 @@ class RobotController(object):
         """
 
         # TODO: try and make this better
-        if action["move"] and action["move"] == self.old_action["move"]:
+        if (action["move"] or action["strafe"]) and action == self.old_action:
             return
-        if action["move"] == 0 and self.old_action["move"] == 0 \
-                and action["angle"] == 0 and self.old_action["angle"] == 0 \
-                and action["strafe"] == 0 and self.old_action["strafe"] == 0 \
-                and action["grabber"] == -1 and not action["kick"]:
+        if action == self.old_action and action == stop():
             return
 
         # Sends move forward
@@ -275,9 +282,10 @@ class RobotController(object):
             print("Kick")
             comm.send('Q', action['kick'])
 
-    def shutdown(self, comm):
+    @staticmethod
+    def shutdown(comm):
+        # comm.send(' ', 0)
         pass
-
 
 class Arduino:
     def __init__(self, port, rate, timeOut, comms):
