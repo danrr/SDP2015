@@ -58,13 +58,19 @@ def get_radial_data(pitch=0, filename=PATH+'/calibrations/undistort.txt'):
     return data[pitch]
 
 
-def get_colors(pitch=0, filename=PATH+'/calibrations/calibrations.json'):
+def get_colors(pitch=0, filename=PATH+'/calibrations/calibrations_user.json'):
     """
     Get colros from the JSON calibration file.
     Json file : specific - values in this column will be overriden by exiting application
                 default - values that was found to be working the best, backup
     Converts all
     """
+    # If calibrations_user doesn't exist, then create calibrations_user
+    # with the default values copied from calibrations.json
+    if not os.path.isfile(filename):
+        default_json_content = get_json(PATH+'/calibrations/calibrations.json')
+        write_json(filename, default_json_content)
+
     json_content = get_json(filename)
     machine_name = socket.gethostname().split('.')[0]
     pitch_name = 'PITCH0' if pitch == 0 else 'PITCH1'
@@ -95,7 +101,8 @@ def get_colors(pitch=0, filename=PATH+'/calibrations/calibrations.json'):
     return current
 
 
-def save_colors(pitch, colors, filename=PATH+'/calibrations/calibrations.json'):
+def save_colors(pitch, colors, filename=PATH+'/calibrations/calibrations_user.json'):
+
     json_content = get_json(filename)
     machine_name = socket.gethostname().split('.')[0]
     pitch_name = 'PITCH0' if pitch == 0 else 'PITCH1'

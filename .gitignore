@@ -40,3 +40,9 @@ local.properties
 
 # compiled python files
 *.py[ocd]
+
+# Vision calibrations
+calibrations_user.json
+
+# Temporary files
+*~
