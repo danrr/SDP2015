@@ -429,15 +429,13 @@ void strafe(byte data) {
     motorForward(_LEFT_DRIVE, 40);
     motorForward(_RIGHT_DRIVE, 40);
   }
-
   else if (headingDiff < -(_HEADING_TOLERANCE)) {
     motorBackward(_LEFT_DRIVE, 40);
     motorBackward(_RIGHT_DRIVE, 40);
   }
-
   else {
-    motorStop(_LEFT_DRIVE);
-    motorStop(_RIGHT_DRIVE);
+    motorBrake(_LEFT_DRIVE);
+    motorBrake(_RIGHT_DRIVE);
   }
 
   commands[0].millis += 50;
@@ -469,9 +467,13 @@ void slowCloseGrabber(byte data) {
 }
 
 void stopGrabber(byte data) {
-  motorStop(_LEFT_GRABBER);
-  motorStop(_RIGHT_GRABBER);
-  voidCommand(6);
+  motorBrake(_LEFT_GRABBER);
+  motorBrake(_RIGHT_GRABBER);
+
+   // schedule the brakes to be released.
+    commands[0].millis = millis() + 500;
+    commands[0].functionPtr = &releaseBrakes;
+    commands[0].data = 2;
 }
 
 //kicker commands
