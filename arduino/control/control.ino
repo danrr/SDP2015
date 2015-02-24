@@ -21,6 +21,8 @@ unsigned long current_millis;
 unsigned long current_micros;
 unsigned long old_micros;
 
+byte max_time, min_time;
+
 int targetHeading, headingDiff;
 
 int turnPower;
@@ -130,6 +132,7 @@ void updateTimings() {
   current_millis = millis();
   old_micros = current_micros;
   current_micros = micros();
+  computeMinMaxTimings();
 }
 
 /*
@@ -156,17 +159,21 @@ void decodeCommand() {
   switch(cmd) {
     // movement commands
     case _FORWARD:
+      if (commands[0].functionPtr != &moveForward) {
+        targetHeading = getCurrentHeading();
+      }
       commands[0].millis = current_millis;
       commands[0].functionPtr = &moveForward;
       commands[0].data = data;
-      targetHeading = getCurrentHeading();
       break;
 
     case _BACKWARD:
+      if (commands[0].functionPtr != &moveBackward) {
+        targetHeading = getCurrentHeading();
+      }
       commands[0].millis = current_millis;
       commands[0].functionPtr = &moveBackward;
       commands[0].data = data;
-      targetHeading = getCurrentHeading();
       break;
 
     case _STOP:
@@ -194,18 +201,22 @@ void decodeCommand() {
       break;
 
     case _STRAFE_LEFT:
+      if (commands[0].functionPtr != &strafe) {
+        targetHeading = getCurrentHeading();
+      }
       commands[0].millis = current_millis;
       commands[0].functionPtr = &strafe;
       commands[0].data = data;
-      targetHeading = getCurrentHeading();
       motorBackward(_BACK_DRIVE, data);
       break;
 
     case _STRAFE_RIGHT:
+      if (commands[0].functionPtr != &strafe) {
+        targetHeading = getCurrentHeading();
+      }
       commands[0].millis = current_millis;
       commands[0].functionPtr = &strafe;
       commands[0].data = data;
-      targetHeading = getCurrentHeading();
       motorForward(_BACK_DRIVE, data);
       break;
 
@@ -257,7 +268,7 @@ void decodeCommand() {
       break;
 
     case _GET_TIMING:
-      returnTiming();
+      returnTiming(data);
       break;
      
    }
@@ -507,7 +518,7 @@ void returnHeading() {
   response = (byte) (getCurrentHeading() / 2); 
 }
 
-void returnTiming() {
+void computeMinMaxTimings() {
   int timeDiff = (current_micros - old_micros);
   if (timeDiff > 255) {
     timeDiff = 255;
@@ -515,7 +526,27 @@ void returnTiming() {
   if (timeDiff == 0) {
     timeDiff = 1;
   }
-  response = (byte) timeDiff;
+  if (min_time > timeDiff) min_time = (byte) timeDiff;
+  if (max_time < timeDiff) max_time = (byte) timeDiff;
+}
+
+void returnTiming(byte data) {
+  if (!data) {
+    int timeDiff = (current_micros - old_micros);
+    if (timeDiff > 255) {
+      timeDiff = 255;
+    }
+    if (timeDiff == 0) {
+      timeDiff = 1;
+    }
+    response = (byte) timeDiff;
+  }
+  else if (data == 1) {
+    response = min_time;
+  }
+  else if (data == 2) {
+    response = max_time;
+  }
 }
 
 /*
