@@ -2,7 +2,8 @@ from math import tan, pi, hypot, log
 from models import Robot
 
 DISTANCE_MATCH_THRESHOLD = 13
-ANGLE_MATCH_THRESHOLD = pi / 5
+DISTANCE_GOAL_THRESHOLD = 25
+ANGLE_MATCH_THRESHOLD = pi / 10
 BALL_ANGLE_THRESHOLD = pi / 10
 MAX_DISPLACEMENT_SPEED = 690
 MAX_ANGLE_SPEED = 50
@@ -154,11 +155,13 @@ def move(displacement, angle, strafe_ok=False, backwards_ok=False, careful=False
             return {'move': 0, 'strafe': 0, 'angle': angle, 'grabber': grabber, 'kick': 0}
 
         else:
-            speed = 50
+            speed = 100
             if moving_sideways:
                 speed *= -1 if moving_sideways == "left" else 1
                 return {'move': 0, 'strafe': speed, 'angle': 0, 'grabber': grabber, 'kick': 0}
             else:
+                if careful:
+                    speed /= 2
                 speed *= -1 if moving_backwards else 1
                 return {'move': speed, 'strafe': 0, 'angle': 0, 'grabber': grabber, 'kick': 0}
 

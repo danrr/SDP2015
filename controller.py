@@ -131,8 +131,6 @@ class Controller:
                     defenderState, default_actions, actions, grabbers,
                     our_color=self.color, our_side=self.side, key=c, preprocess=pre_options)
                 counter += 1
-            if self.arduino.isOpen:
-                self.arduino.close()
 
         except:
             self.robot.shutdown(self.arduino)
@@ -142,6 +140,8 @@ class Controller:
             # Write the new calibrations to a file.
             tools.save_colors(self.pitch, self.calibration)
             self.robot.shutdown(self.arduino)
+            if self.arduino.isOpen:
+                self.arduino.close()
 
 
 class RobotController(object):
@@ -151,140 +151,73 @@ class RobotController(object):
 
     def __init__(self):
         self.current_speed = 0
-        self.busy = False
-        self.old_action = {"move": None,
-                           "angle": None,
-                           "strafe": None}
-        self.time = time.clock()
-        self.flag = False
-
-    def isBusy(self, comm):
-        try:
-            bits_waiting = comm.serial.inWaiting()
-            if bits_waiting:
-                a = ord(comm.serial.read())
-                if a == 255:
-                    self.busy = False
-            if self.time + 0.4 < time.clock() and self.flag:
-                print "time out"
-                self.busy = False
-                self.flag = False
-            return self.busy
-        except AttributeError:
-            if self.time + 0.4 < time.clock() and self.flag:
-                print "time out"
-                self.busy = False
-                self.flag = False
-            return self.busy
 
     def execute(self, comm, action):
         """
         Execute robot action.
         """
 
-        # TODO: try and make this better
-        if (action["move"] or action["strafe"]) and action == self.old_action:
-            return
-        if action == self.old_action and action == stop():
-            return
-
         # Sends move forward
         if action["move"] > 0:
-            print "trying to move"
-            if not self.isBusy(comm):
-                self.old_action = action
-                self.time = time.clock()
-                self.flag = True
-                print("Move forward")
-                comm.send('W', action['move'])
+            print "Move forward: {amount}".format(amount=abs(action['move']))
+            comm.send('W', action['move'])
 
         # Sends move backward
         elif action['move'] < 0:
-            if not self.isBusy(comm):
-                self.old_action = action
-                self.time = time.clock()
-                self.flag = True
-                print("Move Backward")
-                comm.send('S', abs(action['move']))
+            print "Move Backward: {amount}".format(amount=abs(action['move']))
+            comm.send('S', abs(action['move']))
 
         #sends strafe right
         elif action['strafe'] < 0:
-            if not self.isBusy(comm):
-                self.old_action = action
-                self.time = time.clock()
-                self.flag = True
-                print("Strafe right")
-                comm.send('V', abs(action['strafe']))
+            print "Strafe right: {amount}".format(amount=abs(action['move']))
+            comm.send('V', abs(action['strafe']))
 
         #sends strafe left
         elif action['strafe'] > 0:
-            if not self.isBusy(comm):
-                self.old_action = action  #
-                self.time = time.clock()
-                self.flag = True
-
-                print("Strafe left")
-                comm.send('C', action['strafe'])
+            print "Strafe left: {amount}".format(amount=abs(action['move']))
+            comm.send('C', action['strafe'])
 
         #sends turn right by a certain angle
         elif action['angle'] < 0:
-            if not self.isBusy(comm):
-                self.old_action = action
-                print("Turn right by " + str(action['angle'] * 2))
-                comm.send('D', abs(action['angle']))
-                self.busy = True
-                self.time = time.clock()
-                self.flag = True
+            print("Turn right by " + str(abs(action['angle'] * 2)))
+            comm.send('D', abs(action['angle']))
 
         #sends turn left by a certain angle
         elif action['angle'] > 0:
-            if not self.isBusy(comm):
-                self.old_action = action
-                print("Turn left by " + str(abs(action['angle'] * 2)))
-                comm.send('A', action['angle'])
-                self.busy = True
-                self.time = time.clock()
-                self.flag = True
+            print("Turn left by " + str(action['angle'] * 2))
+            comm.send('A', action['angle'])
 
         # Else stop
         else:
             print "Sending stop"
-            self.old_action = action
             comm.send(' ', 0)
-            self.busy = False
 
         #sends close both grabbers at the same time
         if action['grabber'] == 0:
-            self.old_action = action
             print("Close both grabbers at once")
             comm.send('X', (action['grabber']))
 
         #sends close right grabber first
         elif action['grabber'] == 1:
-            self.old_action = action
             print("Close right grabber first")
             comm.send('X', 0)
 
         #sends close left grabber first
         elif action['grabber'] == 2:
-            self.old_action = action
             print("Close left grabber first")
             comm.send('X', 0)
 
         elif action['grabber'] == 3:
-            self.old_action = action
             print("Open grabber")
             comm.send('Z', 0)
 
         #sends kick command
         elif action['kick'] > 1:
-            self.old_action = action
             print("Kick")
             comm.send('Q', action['kick'])
 
-    @staticmethod
-    def shutdown(comm):
-        # comm.send(' ', 0)
+    def shutdown(self, comm):
+        comm.send(' ', 0)
         pass
 
 class Arduino:
