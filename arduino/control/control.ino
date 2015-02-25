@@ -20,8 +20,10 @@ unsigned long current_millis;
 // For timing purposes
 unsigned long current_micros;
 unsigned long old_micros;
+unsigned long old_millis;
 
-byte max_time, min_time;
+byte max_time = 0;    // the maximum time (in ms)
+byte min_time = 255;  // the minimum time (in us)
 
 int targetHeading, headingDiff;
 
@@ -129,6 +131,7 @@ void loop() {
 }
 
 void updateTimings() {
+  old_millis = current_millis;
   current_millis = millis();
   old_micros = current_micros;
   current_micros = micros();
@@ -162,6 +165,7 @@ void decodeCommand() {
       if (commands[0].functionPtr != &moveForward) {
         targetHeading = getCurrentHeading();
       }
+      motorStop(_BACK_DRIVE);
       commands[0].millis = current_millis;
       commands[0].functionPtr = &moveForward;
       commands[0].data = data;
@@ -171,6 +175,7 @@ void decodeCommand() {
       if (commands[0].functionPtr != &moveBackward) {
         targetHeading = getCurrentHeading();
       }
+      motorStop(_BACK_DRIVE);
       commands[0].millis = current_millis;
       commands[0].functionPtr = &moveBackward;
       commands[0].data = data;
@@ -179,10 +184,11 @@ void decodeCommand() {
     case _STOP:
       commands[0].millis = current_millis;
       commands[0].functionPtr = &driveMotorStop;
-      commands[0].data = data;
+      commands[0].data = 1;
       break;
 
     case _TURN_LEFT:
+      motorStop(_BACK_DRIVE);
       turnPower = -30;
       commands[0].millis = current_millis;
       commands[0].functionPtr = &turnLeft;
@@ -192,6 +198,7 @@ void decodeCommand() {
       break;
 
     case _TURN_RIGHT:
+      motorStop(_BACK_DRIVE);
       turnPower = 30;
       commands[0].millis = current_millis;
       commands[0].functionPtr = &turnRight;
@@ -334,10 +341,13 @@ void moveBackward(byte power) {
 }
 
 void driveMotorStop(byte data) {
-  motorStop(_LEFT_DRIVE);
-  motorStop(_RIGHT_DRIVE);
-  motorStop(_BACK_DRIVE);
-  voidCommand(0);
+  motorBrake(_LEFT_DRIVE);
+  motorBrake(_RIGHT_DRIVE);
+  motorBrake(_BACK_DRIVE);
+  
+  commands[0].millis = millis() + 500;
+  commands[0].functionPtr = &releaseBrakes;
+  commands[0].data = 1;
 }
 
 void setRotationalSpeed(int target) {
@@ -425,12 +435,13 @@ void releaseBrakes(byte data) {
     motorStop(_LEFT_DRIVE);
     motorStop(_RIGHT_DRIVE);
     motorStop(_BACK_DRIVE);
+    voidCommand(0);
   }
   else if (data == 2) {
     motorStop(_LEFT_GRABBER);
     motorStop(_RIGHT_GRABBER);
+    voidCommand(6);
   }
-  voidCommand(0);
 }
 
 void strafe(byte data) {
@@ -481,10 +492,10 @@ void stopGrabber(byte data) {
   motorBrake(_LEFT_GRABBER);
   motorBrake(_RIGHT_GRABBER);
 
-   // schedule the brakes to be released.
-    commands[0].millis = millis() + 500;
-    commands[0].functionPtr = &releaseBrakes;
-    commands[0].data = 2;
+  // schedule the brakes to be released.
+  commands[6].millis = millis() + 500;
+  commands[6].functionPtr = &releaseBrakes;
+  commands[6].data = 2;
 }
 
 //kicker commands
@@ -519,20 +530,27 @@ void returnHeading() {
 }
 
 void computeMinMaxTimings() {
-  int timeDiff = (current_micros - old_micros);
-  if (timeDiff > 255) {
-    timeDiff = 255;
+  int timeDiffMicros = (current_micros - old_micros) / 10;
+  if (timeDiffMicros > 255) {
+    timeDiffMicros = 255;
   }
-  if (timeDiff == 0) {
-    timeDiff = 1;
+  if (timeDiffMicros == 0) {
+    timeDiffMicros = 1;
   }
-  if (min_time > timeDiff) min_time = (byte) timeDiff;
-  if (max_time < timeDiff) max_time = (byte) timeDiff;
+  int timeDiffMillis = (current_millis - old_millis) * 10;
+  if (timeDiffMillis > 255) {
+    timeDiffMillis = 255;
+  }
+  if (timeDiffMillis == 0) {
+    timeDiffMillis = 1;
+  }
+  if (min_time > timeDiffMicros) min_time = (byte) timeDiffMicros;
+  if (max_time < timeDiffMillis) max_time = (byte) timeDiffMillis;
 }
 
 void returnTiming(byte data) {
   if (!data) {
-    int timeDiff = (current_micros - old_micros);
+    int timeDiff = (current_micros - old_micros) / 10;
     if (timeDiff > 255) {
       timeDiff = 255;
     }
@@ -541,7 +559,8 @@ void returnTiming(byte data) {
     }
     response = (byte) timeDiff;
   }
-  else if (data == 1) {
+
+  if (data == 1) {
     response = min_time;
   }
   else if (data == 2) {
