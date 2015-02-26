@@ -118,7 +118,7 @@ class Controller:
 
                 # Information about states
                 attackerState = ["No idea", "No idea"]
-                defenderState = "whatever"
+                defenderState = ["Who knows?", "Who knows?"]
                 # ######################## END PLANNING ###############################
 
                 # Use 'y', 'b', 'r' to change color.

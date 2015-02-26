@@ -161,7 +161,7 @@ def move(displacement, angle, strafe_ok=False, backwards_ok=False, careful=False
                 return {'move': 0, 'strafe': speed, 'angle': 0, 'grabber': grabber, 'kick': 0}
             else:
                 if careful:
-                    speed /= 2
+                    speed = 40
                 speed *= -1 if moving_backwards else 1
                 return {'move': speed, 'strafe': 0, 'angle': 0, 'grabber': grabber, 'kick': 0}
 
