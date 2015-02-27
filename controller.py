@@ -107,8 +107,18 @@ class Controller:
                 actions = self.planner.plan()
                 if actions:
                     self.robot.execute(self.arduino, actions)
+                    default_actions = actions
                 else:
                     actions = default_actions
+
+                busy_waiting = self.arduino.serial.inWaiting()
+                if busy_waiting:
+                    message = self.arduino.serial.read()
+                    if chr(ord(message)) in ["W", "S", "A", "D", "C", "V", " "]:
+                        print "Received", message
+                        self.planner.reset_time(chr(ord(message)))
+                    elif ord(message) == 255:
+                        pass
 
                 # Information about the grabbers from the world
                 grabbers = {
@@ -169,12 +179,12 @@ class RobotController(object):
 
         #sends strafe right
         elif action['strafe'] < 0:
-            print "Strafe right: {amount}".format(amount=abs(action['move']))
+            print "Strafe right: {amount}".format(amount=abs(action['strafe']))
             comm.send('V', abs(action['strafe']))
 
         #sends strafe left
         elif action['strafe'] > 0:
-            print "Strafe left: {amount}".format(amount=abs(action['move']))
+            print "Strafe left: {amount}".format(amount=abs(action['strafe']))
             comm.send('C', action['strafe'])
 
         #sends turn right by a certain angle

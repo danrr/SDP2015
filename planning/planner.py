@@ -20,10 +20,32 @@ class Planner:
         self.time = None
         self.old_action = stop()
         self.current_action = stop()
-        self.goal_line = self._world.our_goal.x + GOAL_ALIGN_OFFSET * 1 if self._world._our_side == "left" else -1
+        self.goal_line = self._world.our_goal.x + GOAL_ALIGN_OFFSET * (1 if self._world._our_side == "left" else -1)
+
+    def reset_time(self, command):
+        if command == "W" and self.old_action["move"] > 0:
+            self.time = None
+        elif command == "S" and self.old_action["move"] < 0:
+            self.time = None
+        elif command == "A" and self.old_action["angle"] > 0:
+            self.time = None
+        elif command == "D" and self.old_action["angle"] < 0:
+            self.time = None
+        elif command == "V" and self.old_action["strafe"] < 0:
+            self.time = None
+        elif command == "C" and self.old_action["strafe"] > 0:
+            self.time = None
+        elif command == " " and self.old_action == stop():
+            self.time = None
 
     def update_world(self, position_dictionary):
         self._world.update_positions(position_dictionary)
+
+    def get_strafe_angle(self, distance):
+        angle = pi / 2
+        angle *= -1 if distance < 0 else 1
+        angle *= -1 if self._world._our_side == "right" else 1
+        return angle
 
     def plan(self):
         # TODO: maybe move flood stuff into here using self.state
@@ -59,7 +81,7 @@ class Planner:
             #                                          bounce=False)
             #     if predicted_y:
             #         distance_to_move = self._world.our_defender.y - predicted_y
-            #         angle = pi/2 if distance_to_move > 0 else -pi/2
+            #         angle = self.get_strafe_angle(distance_to_move)
             #         self.current_action = move(distance_to_move, angle, strafe_ok=True, backwards_ok=False)
             #     if not predicted_y:
             #         self.go_to_ball()
@@ -90,7 +112,7 @@ class Planner:
                 # if we can intercept
                 if predicted_y:
                     distance_to_move = self._world.our_defender.y - predicted_y
-                    angle = pi/2 if distance_to_move > 0 else -pi/2
+                    angle = self.get_strafe_angle(distance_to_move)
                     self.current_action = move(abs(distance_to_move), angle, strafe_ok=True, backwards_ok=False)
             if self.current_action == stop():
                 # move to center of goal if there is nothing to do
@@ -153,12 +175,12 @@ class Planner:
         # if not aligned with the center of the goal - strafe to center
         distance_to_move = self._world.our_defender.y - self._world.pitch.height / 2
         if abs(distance_to_move) > DISTANCE_GOAL_THRESHOLD:
-            angle = pi/2 if distance_to_move > 0 else -pi/2
+            angle = self.get_strafe_angle(distance_to_move)
             self.current_action = move(abs(distance_to_move), angle, strafe_ok=True, backwards_ok=False)
         # are we in the centre?
         if self.current_action == stop():
             # move back to goal line
-            distance_to_move = self._world.our_defender.x - self.goal_line
+            distance_to_move = abs(self._world.our_defender.x - self.goal_line)
             angle = -pi
             self.current_action = move(distance_to_move, angle, strafe_ok=False, backwards_ok=True, careful=True)
 
