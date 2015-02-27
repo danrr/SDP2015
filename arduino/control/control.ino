@@ -503,8 +503,20 @@ void slowOpenGrabber(byte data) {
 }
 
 void startCloseGrabber(byte data) {
-  motorForward(_LEFT_GRABBER, 100);
-  motorBackward(_RIGHT_GRABBER, 100);
+  if (data == 1) {
+    // Close left grabber first
+    motorForward(_LEFT_GRABBER, 100);
+    motorBackward(_RIGHT_GRABBER, 20);
+  } 
+  else if (data == 2) {
+    // Close right grabber first
+    motorForward(_LEFT_GRABBER, 10);
+    motorBackward(_RIGHT_GRABBER, 100);
+  }
+  else {
+    motorForward(_LEFT_GRABBER, 100);
+    motorBackward(_RIGHT_GRABBER, 100);
+  }
   voidCommand(4);
 }
 
