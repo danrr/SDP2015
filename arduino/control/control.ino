@@ -148,7 +148,7 @@ void fetchCommand() {
   if (Serial.available() >= 2) {
     cmd = (char)Serial.read();
     data = (char)Serial.read();
-    response = 0x00;
+    response = cmd;
   }
 }
 
@@ -168,7 +168,7 @@ void decodeCommand() {
       motorStop(_BACK_DRIVE);
       commands[0].millis = current_millis;
       commands[0].functionPtr = &moveForward;
-      commands[0].data = data;
+      commands[0].data = data; 
       break;
 
     case _BACKWARD:
@@ -211,20 +211,24 @@ void decodeCommand() {
       if (commands[0].functionPtr != &strafe) {
         targetHeading = getCurrentHeading();
       }
-      commands[0].millis = current_millis;
-      commands[0].functionPtr = &strafe;
+      motorStop(_LEFT_DRIVE);
+      motorStop(_RIGHT_DRIVE);
+      motorStop(_BACK_DRIVE);
+      commands[0].millis = current_millis + 200;
+      commands[0].functionPtr = &startStrafingLeft;
       commands[0].data = data;
-      motorBackward(_BACK_DRIVE, data);
       break;
 
     case _STRAFE_RIGHT:
       if (commands[0].functionPtr != &strafe) {
         targetHeading = getCurrentHeading();
       }
-      commands[0].millis = current_millis;
-      commands[0].functionPtr = &strafe;
+      motorStop(_LEFT_DRIVE);
+      motorStop(_RIGHT_DRIVE);
+      motorStop(_BACK_DRIVE);
+      commands[0].millis = current_millis + 200;
+      commands[0].functionPtr = &startStrafingRight;
       commands[0].data = data;
-      motorForward(_BACK_DRIVE, data);
       break;
 
     // kick commands
@@ -442,6 +446,20 @@ void releaseBrakes(byte data) {
     motorStop(_RIGHT_GRABBER);
     voidCommand(6);
   }
+}
+
+void startStrafingRight(byte data) {
+  commands[0].millis = current_millis;
+  commands[0].functionPtr = &strafe;
+  commands[0].data = data;
+  motorForward(_BACK_DRIVE, data);
+}
+
+void startStrafingLeft(byte data) {
+  commands[0].millis = current_millis;
+  commands[0].functionPtr = &strafe;
+  commands[0].data = data;
+  motorBackward(_BACK_DRIVE, data);
 }
 
 void strafe(byte data) {
