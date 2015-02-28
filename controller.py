@@ -80,6 +80,7 @@ class Controller:
             busy_waiting = self.arduino.serial.inWaiting()
             if busy_waiting:
                 message = self.arduino.serial.read()
+                print ord(message)
                 if chr(ord(message)) in ["W", "S", "A", "D", "C", "V", " "]:
                     print "Received", message
                     self.planner.reset_time(chr(ord(message)))

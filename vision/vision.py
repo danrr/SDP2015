@@ -269,7 +269,7 @@ class Camera(object):
             frame, self.c_matrix, self.dist, None, self.nc_matrix)
 
     def get_adjusted_center(self, frame):
-        return (320-self.crop_values[0], 240-self.crop_values[2])
+        return 320-self.crop_values[0], 240-self.crop_values[2]
 
 
 class GUI(object):

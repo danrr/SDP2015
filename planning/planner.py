@@ -3,7 +3,7 @@ from collisions import *
 from strategies import *
 from utilities import *
 
-GOAL_ALIGN_OFFSET = 80
+GOAL_ALIGN_OFFSET = 60
 
 
 class Planner:
@@ -18,6 +18,7 @@ class Planner:
         self.just_kicked = False
         self.is_catching = None
         self.time = None
+        self.strafing = False
         self.old_action = stop()
         self.current_action = stop()
         self.goal_line = self._world.our_goal.x + GOAL_ALIGN_OFFSET * (1 if self._world._our_side == "left" else -1)
@@ -166,7 +167,7 @@ class Planner:
 
         # if not facing forward - turn to face forward
         angle = self._world.our_defender.get_rotation_to_point(self._world.pitch.width / 2, self._world.our_defender.y)
-        self.current_action = move(0, angle, grabber=self.current_action["grabber"])
+        self.current_action = move(0, angle, grabber=self.current_action["grabber"], careful=not self.strafing)
 
     def align_to_goal(self):
         """
@@ -175,14 +176,16 @@ class Planner:
         # if not aligned with the center of the goal - strafe to center
         distance_to_move = self._world.our_defender.y - self._world.pitch.height / 2
         if abs(distance_to_move) > DISTANCE_GOAL_THRESHOLD:
+            self.strafing = True
             angle = self.get_strafe_angle(distance_to_move)
             self.current_action = move(abs(distance_to_move), angle, strafe_ok=True, backwards_ok=False)
         # are we in the centre?
-        if self.current_action == stop():
+        else:
+            self.strafing = False
             # move back to goal line
-            distance_to_move = abs(self._world.our_defender.x - self.goal_line)
-            angle = -pi
-            self.current_action = move(distance_to_move, angle, strafe_ok=False, backwards_ok=True, careful=True)
+            distance_to_move = self._world.our_defender.x - self.goal_line
+            angle = -pi if distance_to_move < 0 else 0
+            self.current_action = move(abs(distance_to_move), angle, strafe_ok=False, backwards_ok=True, careful=True)
 
     def aim_and_pass(self):
         self.current_action = stop()
