@@ -11,7 +11,7 @@ class Planner:
         self._world = World(our_side, pitch_num)
         # measurement used 1cm = 2.28px
         # TODO: tinker with these to get the proper grabber areas
-        self._world.our_defender.catcher_area = {'width': 40, 'height': 45, 'front_offset': 0}  # 10
+        self._world.our_defender.catcher_area = {'width': 50, 'height': 35, 'front_offset': 0}  # 10
         self._world.our_attacker.catcher_area = {'width': 35, 'height': 20, 'front_offset': 18}
 
         self.is_kicking = False
@@ -24,19 +24,19 @@ class Planner:
 
     def reset_time(self, command):
         if command == "W" and self.old_action["move"] > 0:
-            self.time = None
+            self.time = time.clock()
         elif command == "S" and self.old_action["move"] < 0:
-            self.time = None
+            self.time = time.clock()
         elif command == "A" and self.old_action["angle"] > 0:
-            self.time = None
+            self.time = time.clock()
         elif command == "D" and self.old_action["angle"] < 0:
-            self.time = None
+            self.time = time.clock()
         elif command == "V" and self.old_action["strafe"] < 0:
-            self.time = None
+            self.time = time.clock()
         elif command == "C" and self.old_action["strafe"] > 0:
-            self.time = None
+            self.time = time.clock()
         elif command == " " and self.old_action == stop():
-            self.time = None
+            self.time = time.clock()
 
     def update_world(self, position_dictionary):
         self._world.update_positions(position_dictionary)
@@ -48,11 +48,12 @@ class Planner:
         return angle
 
     def plan(self):
-        # TODO: maybe move flood stuff into here using self.state
-        # TODO: take into account where ball was seen last when it's hidden?
+        # TODO: take into account where ball was seen last when it's hidden, now it just assumes we have it
+        if (self._world.ball.x, self._world.ball.y) == (0, 0) and self._world.our_defender.catcher == "closed":
+            self.aim_and_pass()
 
         # if ball is in our zone:
-        if self._world.pitch.zones[self._world.our_defender.zone].isInside(self._world.ball.x, self._world.ball.y):
+        elif self._world.pitch.zones[self._world.our_defender.zone].isInside(self._world.ball.x, self._world.ball.y):
             self.current_action = stop()
 
             if self.is_kicking:
@@ -71,20 +72,19 @@ class Planner:
                 self._world.our_defender.catcher = "closed"
                 self.current_action = grab_ball_center()
                 self.is_catching = time.clock()
-                #
-                #     # if ball moving fast
-            # if self._world.ball.velocity > BALL_VELOCITY:
-            #     # try and intercept
-            #     predicted_y = predict_y_intersection(self._world,
-            #                                          self._world.our_defender.x,
-            #                                          self._world.ball,
-            #                                          bounce=False)
-            #     if predicted_y:
-            #         distance_to_move = self._world.our_defender.y - predicted_y
-            #         angle = self.get_strafe_angle(distance_to_move)
-            #         self.current_action = move(distance_to_move, angle, strafe_ok=True, backwards_ok=False)
-            #     if not predicted_y:
-            #         self.go_to_ball()
+            # if ball moving fast
+            elif self._world.ball.velocity > BALL_VELOCITY:
+                # try and intercept
+                predicted_y = predict_y_intersection(self._world,
+                                                     self._world.our_defender.x,
+                                                     self._world.ball,
+                                                     bounce=False)
+                if predicted_y:
+                    distance_to_move = self._world.our_defender.y - predicted_y
+                    angle = self.get_strafe_angle(distance_to_move)
+                    self.current_action = move(distance_to_move, angle, strafe_ok=True, backwards_ok=False)
+                if not predicted_y:
+                    self.go_to_ball()
             elif not self.just_kicked:
                 self.go_to_ball()
 
@@ -186,8 +186,9 @@ class Planner:
 
     def aim_and_pass(self):
         self.current_action = stop()
-        angle = self._world.our_defender.get_rotation_to_point(self._world.pitch.width / 2,
-                                                               self._world.pitch.height / 2)
+        angle = self._world.our_defender.get_rotation_to_point(self._world.our_attacker.x,
+                                                               self._world.our_attacker.y
+                                                               )
         self.current_action = move(0, angle, strafe_ok=False, backwards_ok=False, careful=True)
         if self.current_action == stop() and not self.is_catching:
             self.current_action = open_catcher()

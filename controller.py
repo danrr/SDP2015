@@ -75,6 +75,20 @@ class Controller:
 
         self.robot = RobotController()
 
+    def send_response_to_planner(self):
+        if self.arduino.serial:
+            busy_waiting = self.arduino.serial.inWaiting()
+            if busy_waiting:
+                message = self.arduino.serial.read()
+                if chr(ord(message)) in ["W", "S", "A", "D", "C", "V", " "]:
+                    print "Received", message
+                    self.planner.reset_time(chr(ord(message)))
+                elif ord(message) == 255:
+                    pass
+        else:
+            for message in ["W", "S", "A", "D", "C", "V", " "]:
+                self.planner.reset_time(message)
+
     def wow(self):
         """
         Ready your sword, here be dragons.
@@ -111,14 +125,7 @@ class Controller:
                 else:
                     actions = default_actions
 
-                busy_waiting = self.arduino.serial.inWaiting()
-                if busy_waiting:
-                    message = self.arduino.serial.read()
-                    if chr(ord(message)) in ["W", "S", "A", "D", "C", "V", " "]:
-                        print "Received", message
-                        self.planner.reset_time(chr(ord(message)))
-                    elif ord(message) == 255:
-                        pass
+                self.send_response_to_planner()
 
                 # Information about the grabbers from the world
                 grabbers = {
@@ -142,7 +149,8 @@ class Controller:
                     our_color=self.color, our_side=self.side, key=c, preprocess=pre_options)
                 counter += 1
 
-        except:
+        except Exception as e:
+            print e.message
             self.robot.shutdown(self.arduino)
             raise
 
