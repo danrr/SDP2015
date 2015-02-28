@@ -129,7 +129,7 @@ class Vision:
         from the center of the lens.
         """
         plane_height = 250.0
-        robot_height = 0.0
+        robot_height = 20.0
         coefficient = robot_height/plane_height
 
         x = point[0]
