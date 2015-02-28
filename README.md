@@ -58,3 +58,29 @@
 * when pulling after local commit have been made use `git pull --rebase` which will rebase your local commits on top of the master on origin (makes the tree  look less of a mess)
 * use branch names that describe what you are doing; using tokens might be useful if there are a lot of branches: vision/tweaking-calibrations
 * run `git remote prune origin` to stop tracking branches that are no longer on origin
+
+
+####Vision
+
+ * Open terminal and run ./camera_setup.sh.x 
+   * This resets the hardware settings for the video feed, manual controller for this underway
+ * Run python calibrate.py 0 (or 1 depending on the pitch)
+   * Follow the instrutions in terminal, to exit immedietly press q
+   * First specify by 8 dots the outline of the pitch, the dots go to black corners, including little of the black part of the pitch is Ok, slightly prefered, this just specifies for the camera where to look. Press q
+   * By 6 dots specify the left defender, including the white lines and half of the white line between defender and attacker, specifing the zone for the defender. Press q
+   * By 4 dots specify the right attacker, including white lines. Press q
+   * Follow this process
+   * This calibrates the table, specifing the boundries the table and the zones
+ * Now you can run the vision code, controller.py
+   * To exit press ESC this saves the current settings
+   * move the video out of the way to see windows with title mask plate, or to get to this screen press p - for plate
+     * Here Adjust values to see all for plates on the screen, plates in white, background black and the i's inside the plates also black.
+     * This specifies the bounding square for plates, this improves jitterness
+   * Press d for dot
+       * Adjust values to see 4 white dots on screen, everything else in black
+       * This identifies the direction of the robot
+   * Press r for red
+       * Adjust values to see just the red ball in white, everything else in black
+   * Tinker with these values and plate positions on the pitch, as the lighting may be different at different parts of pitch
+   * Press ESC to exit and save these values.
+   
