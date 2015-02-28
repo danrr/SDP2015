@@ -346,6 +346,7 @@ class World(object):
         self._our_side = our_side
         self._their_side = 'left' if our_side == 'right' else 'right'
         self._ball = Ball(0, 0, 0, 0)
+        self._old_ball = Ball(0, 0, 0, 0)
         self._robots = []
         self._robots.append(Robot(0, 0, 0, 0, 0))
         self._robots.append(Robot(1, 0, 0, 0, 0))
@@ -376,6 +377,10 @@ class World(object):
         return self._ball
 
     @property
+    def old_ball(self):
+        return self._old_ball
+
+    @property
     def our_goal(self):
         return self._goals[0] if self._our_side == 'left' else self._goals[1]
 
@@ -395,4 +400,19 @@ class World(object):
         self.our_defender.vector = pos_dict['our_defender']
         self.their_defender.vector = pos_dict['their_defender']
         self.ball.vector = pos_dict['ball']
+
+        # Checking if the position of the ball makes sense
+        if self.ball.x == 0 and self.ball.y == 0:
+            print("LOST BALL")
+            if self.our_attacker.get_displacement_to_point(self.old_ball.x, self.old_ball.y) <= 20:
+                self.ball.vector = pos_dict['our_attacker']
+            elif self.their_attacker.get_displacement_to_point(self.old_ball.x, self.old_ball.y) <= 20:
+                self.ball.vector = pos_dict['their_attacker']
+            elif self.our_defender.get_displacement_to_point(self.old_ball.x, self.old_ball.y) <= 20:
+                self.ball.vector = pos_dict['our_defender']
+            elif self.their_defender.get_displacement_to_point(self.old_ball.x, self.old_ball.y) <= 20:
+                self.ball.vector = pos_dict['their_defender']
+
+        self.old_ball.vector = self.ball.vector
+
         # Checking if the robot locations make sense:
