@@ -1,4 +1,4 @@
-from math import pi
+from math import pi, log10
 from planning.utilities import predict_y_intersection
 
 GOAL_ALIGN_OFFSET = 60
@@ -37,7 +37,7 @@ class BaseStrategy(object):
         if angle > 0:
             self.comms_manager.turn_left(angle)
         else:
-            self.comms_manager.turn_right(angle)
+            self.comms_manager.turn_right(abs(angle))
 
 
 class GoToBall(BaseStrategy):
@@ -70,7 +70,8 @@ class GoToBall(BaseStrategy):
         else:
             # TODO use distance to ball to determine speed
             distance_to_ball = self.world.our_defender.get_displacement_to_point(self.world.ball.x, self.world.ball.y)
-            self.comms_manager.move_forward(50)
+            speed = int(50 + log10(distance_to_ball)*10) if distance_to_ball <= 100 else 100
+            self.comms_manager.move_forward(speed)
         return self
 
 

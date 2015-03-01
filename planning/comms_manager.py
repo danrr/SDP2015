@@ -33,7 +33,7 @@ class CommunicationsManager(object):
     def strafe_right(self, power):
         if self.check_last_command('V'):
             print "Strafe right: {amount}".format(amount=power)
-            self.arduino.comm.send('V', power)
+            self.arduino.send('V', power)
 
     def strafe_left(self, power):
         if self.check_last_command('C'):
@@ -77,4 +77,4 @@ class CommunicationsManager(object):
 
     def shutdown(self):
         print("SHUT DOWN")
-        self.arduino.senf(" ", 0)
+        self.arduino.send(" ", 0)
