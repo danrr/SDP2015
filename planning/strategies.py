@@ -160,7 +160,15 @@ class Intercept(BaseStrategy):
                 self.state = "strafing"
             else:
                 # TODO: move to be closer to an ideal distance from goal self.state = "aligning", use goal_front_x
-                self.comms_manager.stop()
+                disp = self.world.our_defender.get_displacement_to_point(self.goal_line, self.world.our_defender.y)
+                if abs(disp) > DISTANCE_THRESHOLD:
+                    speed = self.calculate_speed(abs(disp))
+                    if disp < 0:
+                        self.comms_manager.move_forward(speed)
+                    else:
+                        self.comms_manager.move_backward(speed)
+                else:
+                    self.comms_manager.stop()
 
         return self
 
