@@ -1,10 +1,11 @@
-from math import pi, log10
+from math import pi, log
 from planning.utilities import predict_y_intersection
+import time
 
 GOAL_ALIGN_OFFSET = 60
 BALL_VELOCITY = 3
-DISTANCE_THRESHOLD = 15
-CAREFUL_THRESHOLD = 50
+DISTANCE_THRESHOLD = 20
+CAREFUL_THRESHOLD = 100
 STRAFING_THRESHOLD = pi / 5
 TURNING_THRESHOLD = pi / 10
 
@@ -25,8 +26,8 @@ class BaseStrategy(object):
         if abs(distance) < DISTANCE_THRESHOLD:
             return False
 
-        if distance > 0 and self.world._our_side == "left" or \
-                distance < 0 and self.world._our_side == "right":
+        if distance < 0 and self.world._our_side == "left" or \
+                distance > 0 and self.world._our_side == "right":
             self.comms_manager.strafe_left(100)
         else:
             self.comms_manager.strafe_right(100)
@@ -39,6 +40,14 @@ class BaseStrategy(object):
             self.comms_manager.turn_left(angle)
         else:
             self.comms_manager.turn_right(abs(angle))
+
+    def in_our_half(self):
+        return (self.world.pitch.zones[self.world.our_defender.zone].isInside(self.world.ball.x, self.world.ball.y) \
+            or self.world.pitch.zones[self.world.their_attacker.zone].isInside(self.world.ball.x, self.world.ball.y))
+
+    def calculate_speed(self, distance):
+        speed = 25+log(distance)*10 if distance <= 150 else 80
+        return int(10*round(speed/10))
 
 
 class GoToBall(BaseStrategy):
@@ -70,17 +79,13 @@ class GoToBall(BaseStrategy):
             self.send_correct_turn(angle)
         else:
             distance_to_ball = self.world.our_defender.get_displacement_to_point(self.world.ball.x, self.world.ball.y)
-<<<<<<< HEAD
-            speed = int(50 + log10(distance_to_ball)*10) if distance_to_ball <= 100 else 100
-            self.comms_manager.move_forward(speed)
-=======
+            speed = self.calculate_speed(distance_to_ball)
             if distance_to_ball > CAREFUL_THRESHOLD:
-                self.comms_manager.move_forward(100)
+                self.comms_manager.move_forward(speed)
             elif distance_to_ball > DISTANCE_THRESHOLD:
-                self.comms_manager.move_forward(50)
+                self.comms_manager.move_forward(speed-20)
             else:
                 self.comms_manager.stop()
->>>>>>> strategy-2-reveangeance
         return self
 
 
@@ -129,7 +134,7 @@ class Intercept(BaseStrategy):
                                                      self.world.our_defender.x,
                                                      self.world.ball,
                                                      bounce=True)
-                if predicted_y and self.world.our_defender.catcher == "closed":
+                if predicted_y and self.world.our_defender.catcher == "closed" and self.in_our_half():
                     self.comms_manager.open_grabber()
                     self.world.our_defender.catcher = "open"
 
@@ -140,7 +145,7 @@ class Intercept(BaseStrategy):
                                                      self.world.their_attacker,
                                                      bounce=True)
 
-                if self.world.our_defender.catcher == "closed":
+                if self.world.our_defender.catcher == "open":
                     self.comms_manager.close_grabber_center()
                     self.world.our_defender.catcher = "closed"
 
@@ -164,6 +169,7 @@ class AimAndPass(BaseStrategy):
     def __init__(self, world, comms_manager):
         super(AimAndPass, self).__init__(world, comms_manager)
         self.state = "aiming"
+        self.time = None
 
     def execute(self):
         if not self.world.our_defender.can_catch_ball(self.world.ball):
@@ -171,7 +177,15 @@ class AimAndPass(BaseStrategy):
 
         if self.state == "kicking":
             self.comms_manager.kick()
-            return Intercept(self.world, self.comms_manager)
+            self.state = "passed"
+            self.time = time.clock()
+            return self
+
+        if self.state == "passed":
+            if self.time+0.5 < time.clock():
+                return Intercept(self.world, self.comms_manager)
+            else:
+                return self
 
         # TODO: be a lot more clever about passing: obstacle avoidance(utilities.is_shot_blocked), bounce passing
         angle = self.world.our_defender.get_rotation_to_point(self.world.our_attacker.x,
