@@ -2,7 +2,7 @@ from math import pi, log
 from planning.utilities import predict_y_intersection
 import time
 
-GOAL_ALIGN_OFFSET = 60
+GOAL_ALIGN_OFFSET = 40
 BALL_VELOCITY = 3
 DISTANCE_THRESHOLD = 20
 CAREFUL_THRESHOLD = 100
@@ -26,8 +26,8 @@ class BaseStrategy(object):
         if abs(distance) < DISTANCE_THRESHOLD:
             return False
 
-        if distance < 0 and self.world._our_side == "left" or \
-                distance > 0 and self.world._our_side == "right":
+        if distance < 0 and self.world._our_side == "left" \
+                or distance > 0 and self.world._our_side == "right":
             self.comms_manager.strafe_left(100)
         else:
             self.comms_manager.strafe_right(100)
@@ -42,12 +42,25 @@ class BaseStrategy(object):
             self.comms_manager.turn_right(abs(angle))
 
     def in_our_half(self):
-        return (self.world.pitch.zones[self.world.our_defender.zone].isInside(self.world.ball.x, self.world.ball.y) \
-            or self.world.pitch.zones[self.world.their_attacker.zone].isInside(self.world.ball.x, self.world.ball.y))
+        return (self.world.pitch.zones[self.world.our_defender.zone].isInside(self.world.ball.x,
+                                                                              self.world.ball.y)
+                or self.world.pitch.zones[self.world.their_attacker.zone].isInside(self.world.ball.x,
+                                                                                   self.world.ball.y))
 
-    def calculate_speed(self, distance):
-        speed = 25+log(distance)*10 if distance <= 150 else 80
-        return int(10*round(speed/10))
+    @staticmethod
+    def calculate_speed(distance):
+        speed = 25 + log(distance) * 10 if distance <= 150 else 80
+        return int(10 * round(speed / 10))
+
+    def get_bounded_ball_y(self, full_width=False):
+        top_y = self.world._pitch.height - 60 if full_width \
+            else self.world.our_goal.y + (self.world.our_goal.width / 2) - 30
+        bottom_y = 60 if full_width else \
+            self.world.our_goal.y - (self.world.our_goal.width / 2) + 30
+        y = self.world.ball.y
+        y = max([y, bottom_y])
+        y = min([y, top_y])
+        return y
 
 
 class GoToBall(BaseStrategy):
@@ -56,7 +69,7 @@ class GoToBall(BaseStrategy):
         self.state = "go to ball"
 
     def execute(self):
-        if not self.world.pitch.zones[self.world.our_defender.zone].isInside(self.world.ball.x, self.world.ball.y) :
+        if not self.world.pitch.zones[self.world.our_defender.zone].isInside(self.world.ball.x, self.world.ball.y):
             return Intercept(self.world, self.comms_manager)
 
         if self.world.our_defender.catcher == "closed":
@@ -83,7 +96,7 @@ class GoToBall(BaseStrategy):
             if distance_to_ball > CAREFUL_THRESHOLD:
                 self.comms_manager.move_forward(speed)
             elif distance_to_ball > DISTANCE_THRESHOLD:
-                self.comms_manager.move_forward(speed-20)
+                self.comms_manager.move_forward(speed - 20)
             else:
                 self.comms_manager.stop()
         return self
@@ -95,20 +108,10 @@ class Intercept(BaseStrategy):
         self.state = "turning"
         self.our_goal = self.world.our_goal
         # Find the point we want to align to.
-        self.goal_front_x = self.get_alignment_position()
-
-    def get_alignment_position(self):
-        """
-        Find the x coordinate of where we need to align to initially.
-        """
-        if self.world._our_side == "left":
-            return self.world.our_goal.x + GOAL_ALIGN_OFFSET
-        else:
-            return self.world.our_goal.x - GOAL_ALIGN_OFFSET
 
     def execute(self):
         if self.world.pitch.zones[self.world.our_defender.zone].isInside(self.world.ball.x, self.world.ball.y) and \
-                self.world.ball.velocity < BALL_VELOCITY:
+                        self.world.ball.velocity < BALL_VELOCITY:
             # ball is in our zone, and it's moving slowly, go and catch
             return GoToBall(self.world, self.comms_manager)
 
@@ -150,9 +153,7 @@ class Intercept(BaseStrategy):
                     self.world.our_defender.catcher = "closed"
 
             if not predicted_y:
-                predicted_y = self.world.ball.y
-                predicted_y = max([predicted_y, 60])
-                predicted_y = min([predicted_y, self.world._pitch.height - 60])
+                predicted_y = self.get_bounded_ball_y()
 
             distance_to_move = self.world.our_defender.y - predicted_y
 
@@ -190,7 +191,7 @@ class AimAndPass(BaseStrategy):
             return self
 
         if self.state == "passed":
-            if self.time+0.5 < time.clock():
+            if self.time + 0.5 < time.clock():
                 return Intercept(self.world, self.comms_manager)
             else:
                 return self
@@ -198,7 +199,7 @@ class AimAndPass(BaseStrategy):
         # TODO: be a lot more clever about passing: obstacle avoidance(utilities.is_shot_blocked), bounce passing
         angle = self.world.our_defender.get_rotation_to_point(self.world.our_attacker.x,
                                                               self.world.our_attacker.y
-                                                              )
+        )
         if abs(angle) > TURNING_THRESHOLD:
             self.send_correct_turn(angle)
         else:

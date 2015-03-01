@@ -10,7 +10,7 @@ class CommunicationsManager(object):
 
     def check_last_command(self, command):
         # TODO: use return thingies
-        if self.timer and self.timer + 0.5 < time.clock():
+        if self.timer and self.timer + 1 < time.clock():
             self.timer = None
             self.last_command = None
         if command == self.last_command:

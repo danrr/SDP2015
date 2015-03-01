@@ -1,15 +1,15 @@
 from math import tan, pi, hypot
 
 
-def is_shot_blocked(world, our_robot, their_robot):
+def is_shot_blocked(world):
     """
     Checks if our robot could shoot past their robot
     """
     predicted_y = predict_y_intersection(
-        world, their_robot.x, our_robot, full_width=True, bounce=True)
+        world,  world.their_attacker.x, world.our_defender, full_width=False, bounce=True)
     if predicted_y is None:
         return True
-    return abs(predicted_y - their_robot.y) < their_robot.length
+    return abs(predicted_y - world.their_attacker.y) < world.their_attacker.length
 
 
 def predict_y_intersection(world, predict_for_x, robot, full_width=False, bounce=False):
