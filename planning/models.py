@@ -1,4 +1,5 @@
 from Polygon.cPolygon import Polygon
+from Polygon.Shapes import Circle
 from math import cos, sin, hypot, pi, atan2
 from vision import tools
 
@@ -163,14 +164,14 @@ class PitchObject(object):
         front_right = (self.x + length/2, self.y - width/2)
         back_left = (self.x - length/2, self.y + width/2)
         back_right = (self.x - length/2, self.y - width/2)
-        poly = Polygon((front_left, front_right, back_right, back_left))
+        poly = Polygon((front_left, front_right, back_left, back_right))
         poly.rotate(self.angle, self.x, self.y)
         return poly[0]
 
     def get_polygon(self):
         '''
         Returns 4 edges of a rectangle bounding the current object in the
-        following order: front left, front right, bottom right, and bottom left.
+        following order: front left, front right, bottom left and bottom right.
         '''
         return self.get_generic_polygon(self.width, self.length)
 
@@ -192,14 +193,52 @@ class Robot(PitchObject):
         return self._zone
 
     @property
-    def catcher_area(self):
-        front_left = (self.x + self._catcher_area['front_offset'] + self._catcher_area['height'], self.y + self._catcher_area['width']/2.0)
-        front_right = (self.x + self._catcher_area['front_offset'] + self._catcher_area['height'], self.y - self._catcher_area['width']/2.0)
-        back_left = (self.x + self._catcher_area['front_offset'], self.y + self._catcher_area['width']/2.0)
-        back_right = (self.x + self._catcher_area['front_offset'], self.y - self._catcher_area['width']/2.0)
-        area = Polygon((front_left, front_right, back_right, back_left))
+    def catcher_area_left(self):
+        #the grabber's tips are 3cm
+        #the space between the grabbers is 9cm
+        #each grabber is 6cm long
+        cm_to_px = self._catcher_area['cm_to_px']
+
+        c1 = Circle((6*cm_to_px), (self.x +self._catcher_area['front_offset'],self.y +(3.8* cm_to_px)),32)
+        point1= (self.x +self._catcher_area['front_offset'],self.y +(10.5* cm_to_px))
+        point2= (self.x +self._catcher_area['front_offset'],self.y -(2.5* cm_to_px))
+        point3= (self.x +self._catcher_area['front_offset']+ (6*cm_to_px),self.y -(2.5* cm_to_px))
+        point4= (self.x +self._catcher_area['front_offset']+ (6*cm_to_px),self.y +(10.5* cm_to_px))
+        plus= Polygon((point1,point2,point3,point4))
+        area = c1 & plus
         area.rotate(self.angle, self.x, self.y)
         return area
+
+    @property
+    def catcher_area_right(self):
+        #the grabber's tips are 3cm
+        #the space between the grabbers is 9cm
+        #each grabber is 6cm long
+        cm_to_px = self._catcher_area['cm_to_px']
+
+        c1 = Circle((6*cm_to_px), (self.x +self._catcher_area['front_offset'],self.y -(3.8* cm_to_px)),32)
+        point1= (self.x +self._catcher_area['front_offset'],self.y -(10.5* cm_to_px))
+        point2= (self.x +self._catcher_area['front_offset'],self.y +(2.5* cm_to_px))
+        point3= (self.x +self._catcher_area['front_offset']+ (6*cm_to_px),self.y +(2.5* cm_to_px))
+        point4= (self.x +self._catcher_area['front_offset']+ (6*cm_to_px),self.y -(10.5* cm_to_px))
+        plus= Polygon((point1,point2,point3,point4))
+        area = c1 & plus
+        area.rotate(self.angle, self.x, self.y)
+        return area
+
+
+    @property
+    def catcher_area(self):
+        return self.catcher_area_left| self.catcher_area_right
+
+    @catcher_area_left.setter
+    def catcher_area_left(self, area_dict):
+        self._catcher_area_left = area_dict
+
+    @catcher_area_right.setter
+    def catcher_area_right(self, area_dict):
+        self._catcher_area_right = area_dict
+
 
     @catcher_area.setter
     def catcher_area(self, area_dict):
@@ -215,10 +254,22 @@ class Robot(PitchObject):
         self._catcher = new_position
 
     def can_catch_ball(self, ball):
-        '''
-        Get if the ball is in the catcher zone but may not have possession
-        '''
-        return self.catcher_area.isInside(ball.x, ball.y)
+        cm_to_px= 3.9
+        point1= (self.x +self._catcher_area['front_offset'],self.y +(3.8* cm_to_px))
+        point2= (self.x +self._catcher_area['front_offset'],self.y -(3.8* cm_to_px))
+        point3= (self.x +self._catcher_area['front_offset']+ (6*cm_to_px),self.y -(3.8* cm_to_px))
+        point4= (self.x +self._catcher_area['front_offset']+ (6*cm_to_px),self.y +(3.8* cm_to_px))
+        increased_area= Polygon((point1,point2,point3,point4))
+        increased_area.rotate(self.angle, self.x, self.y)
+        grabber_area= self.catcher_area_left| self.catcher_area_right
+        both= increased_area & grabber_area
+
+        if both.isInside(ball.x,ball.y):
+            return 'both'
+        elif self.catcher_area_left.isInside(ball.x, ball.y):
+            return 'left'
+        elif self.catcher_area_right.isInside(ball.x, ball.y):           
+            return 'right'
 
     def has_ball(self, ball):
         '''
@@ -396,3 +447,4 @@ class World(object):
         self.their_defender.vector = pos_dict['their_defender']
         self.ball.vector = pos_dict['ball']
         # Checking if the robot locations make sense:
+

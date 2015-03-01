@@ -73,7 +73,15 @@ class Controller:
 
         # Set up initial strategy
         world = World(our_side=our_side, pitch_num=self.pitch)
-        world.our_defender.catcher_area = {'width': 50, 'height': 35, 'front_offset': 0}
+        cm_to_px = 3.9
+        width = 21 * cm_to_px
+        height = 8 * cm_to_px
+        front_offset = 7 * cm_to_px
+        world.our_defender.catcher_area = {'width': width,
+                                           'height': height,
+                                           'front_offset': front_offset,
+                                           'cm_to_px': cm_to_px}
+
         self.strategy = Intercept(world, self.comms_manager)
 
     # def send_response_to_planner(self):
