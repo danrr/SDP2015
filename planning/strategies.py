@@ -3,7 +3,8 @@ from planning.utilities import predict_y_intersection
 
 GOAL_ALIGN_OFFSET = 60
 BALL_VELOCITY = 3
-DISTANCE_MATCH_THRESHOLD = 10
+DISTANCE_THRESHOLD = 15
+CAREFUL_THRESHOLD = 50
 STRAFING_THRESHOLD = pi / 5
 TURNING_THRESHOLD = pi / 10
 
@@ -21,7 +22,7 @@ class BaseStrategy(object):
         self.world.update_positions(position_dictionary)
 
     def send_correct_strafe(self, distance):
-        if abs(distance) < DISTANCE_MATCH_THRESHOLD:
+        if abs(distance) < DISTANCE_THRESHOLD:
             return False
 
         if distance > 0 and self.world._our_side == "left" or \
@@ -68,9 +69,13 @@ class GoToBall(BaseStrategy):
         if abs(angle) > TURNING_THRESHOLD:
             self.send_correct_turn(angle)
         else:
-            # TODO use distance to ball to determine speed
             distance_to_ball = self.world.our_defender.get_displacement_to_point(self.world.ball.x, self.world.ball.y)
-            self.comms_manager.move_forward(50)
+            if distance_to_ball > CAREFUL_THRESHOLD:
+                self.comms_manager.move_forward(100)
+            elif distance_to_ball > DISTANCE_THRESHOLD:
+                self.comms_manager.move_forward(50)
+            else:
+                self.comms_manager.stop()
         return self
 
 
@@ -97,7 +102,11 @@ class Intercept(BaseStrategy):
             # ball is in our zone, and it's moving slowly, go and catch
             return GoToBall(self.world, self.comms_manager)
 
-        # TODO: if can catch, catch and go to aim and shoot
+        # if can catch, catch and go to aim and shoot
+        if self.world.our_defender.can_catch_ball(self.world.ball) and self.world.our_defender.catcher == "open":
+            self.comms_manager.close_grabber_center()
+            self.world.our_defender.catcher = "closed"
+            return AimAndPass(self.world, self.comms_manager)
 
         # turn to face enemy attacker
         angle = self.world.our_defender.get_rotation_to_point(self.world.pitch.width / 2, self.world.our_defender.y)
@@ -115,8 +124,9 @@ class Intercept(BaseStrategy):
                                                      self.world.our_defender.x,
                                                      self.world.ball,
                                                      bounce=True)
-                self.comms_manager.open_grabber()
-                self.world.our_defender.catcher = "open"
+                if predicted_y and self.world.our_defender.catcher == "closed":
+                    self.comms_manager.open_grabber()
+                    self.world.our_defender.catcher = "open"
 
             # if the ball is moving slowly or not at all, attempt to
             if self.world.ball.velocity <= BALL_VELOCITY or predicted_y is None:
@@ -124,8 +134,10 @@ class Intercept(BaseStrategy):
                                                      self.world.our_defender.x,
                                                      self.world.their_attacker,
                                                      bounce=True)
-                self.comms_manager.close_grabber_center()
-                self.world.our_defender.catcher = "closed"
+
+                if self.world.our_defender.catcher == "closed":
+                    self.comms_manager.close_grabber_center()
+                    self.world.our_defender.catcher = "closed"
 
             if not predicted_y:
                 predicted_y = self.world.ball.y
@@ -138,7 +150,7 @@ class Intercept(BaseStrategy):
                 self.state = "strafing"
             else:
                 # TODO: move to be closer to an ideal distance from goal self.state = "aligning", use goal_front_x
-                pass
+                self.comms_manager.stop()
 
         return self
 
