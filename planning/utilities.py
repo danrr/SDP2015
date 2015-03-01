@@ -1,13 +1,4 @@
-from math import tan, pi, hypot, log
-from models import Robot
-
-DISTANCE_MATCH_THRESHOLD = 13
-DISTANCE_GOAL_THRESHOLD = 25
-ANGLE_MATCH_THRESHOLD = pi / 5
-BALL_ANGLE_THRESHOLD = pi / 15
-MAX_DISPLACEMENT_SPEED = 690
-MAX_ANGLE_SPEED = 50
-BALL_VELOCITY = 3
+from math import tan, pi, hypot
 
 
 def is_shot_blocked(world, our_robot, their_robot):
@@ -19,40 +10,6 @@ def is_shot_blocked(world, our_robot, their_robot):
     if predicted_y is None:
         return True
     return abs(predicted_y - their_robot.y) < their_robot.length
-
-
-def is_attacker_shot_blocked(world, our_attacker, their_defender):
-    """
-    Checks if our attacker would score if it would immediately turn and shoot.
-    """
-
-    # Acceptable distance that the opponent defender can be relative to our
-    # shooting position in order for us to have a clear shot.
-    distance_threshold = 40
-
-    # Return True if attacker and defender ar close to each other on
-    # the y dimension
-    return abs(our_attacker.y - their_defender.y) < distance_threshold
-
-
-def can_score(world, our_robot, their_goal, turn=0):
-    # Offset the robot angle if need be
-    robot_angle = our_robot.angle + turn
-    goal_zone_poly = world.pitch.zones[their_goal.zone][0]
-
-    reverse = True if their_goal.zone == 3 else False
-    goal_posts = sorted(goal_zone_poly, key=lambda x: x[0], reverse=reverse)[:2]
-    # Makes goal be sorted from smaller to bigger
-    goal_posts = sorted(goal_posts, key=lambda x: x[1])
-
-    goal_x = goal_posts[0][0]
-
-    robot = Robot(
-        our_robot.zone, our_robot.x, our_robot.y, robot_angle % (pi * 2), our_robot.velocity)
-
-    predicted_y = predict_y_intersection(world, goal_x, robot, full_width=True)
-
-    return goal_posts[0][1] < predicted_y < goal_posts[1][1]
 
 
 def predict_y_intersection(world, predict_for_x, robot, full_width=False, bounce=False):
@@ -84,95 +41,3 @@ def predict_y_intersection(world, predict_for_x, robot, full_width=False, bounce
         return predicted_y
     else:
         return None
-
-
-def grab_ball_center():
-    return {'move': 0, 'strafe': 0, 'angle': 0, 'grabber': 0, 'kick': 0}
-
-
-def grab_ball_right():
-    return {'move': 0, 'strafe': 0, 'angle': 0, 'grabber': 1, 'kick': 0}
-
-
-def grab_ball_left():
-    return {'move': 0, 'strafe': 0, 'angle': 0, 'grabber': 2, 'kick': 0}
-
-
-def kick_ball(power):
-    return {'move': 0, 'strafe': 0, 'angle': 0, 'grabber': -1, 'kick': power}
-
-
-def open_catcher():
-    return {'move': 0, 'strafe': 0, 'angle': 0, 'grabber': 3, 'kick': 0}
-
-
-def turn_shoot(orientation, power):
-    return {'move': 0, 'strafe': 0, 'angle': orientation, 'grabber': -1, 'kick': power}
-
-
-def has_matched(robot, x=None, y=None, angle=None,
-                angle_threshold=ANGLE_MATCH_THRESHOLD, distance_threshold=DISTANCE_MATCH_THRESHOLD):
-    dist_matched = True
-    angle_matched = True
-    if not (x is None and y is None):
-        dist_matched = hypot(robot.x - x, robot.y - y) < distance_threshold
-    if not (angle is None):
-        angle_matched = abs(angle) < angle_threshold
-    return dist_matched and angle_matched
-
-
-def move(displacement, angle, strafe_ok=False, backwards_ok=False, careful=False, grabber=-1):
-    """
-    Move in a heading given by "angle" for a distance "displacement". If grabbing the ball, strafe_ok and backwards_ok
-    should be false so the robot can orientate itself to face the ball. Otherwise it should be able to strafe or reverse
-    in order to reach it's destination quickly
-    """
-    moving_backwards = False
-    moving_sideways = False
-    angle_thresh = BALL_ANGLE_THRESHOLD if careful else ANGLE_MATCH_THRESHOLD
-
-    # If heading is greater than 135 degrees the robot should go backwards, therefore the heading needs to be adjusted
-    # by 180 degrees
-
-    if backwards_ok and abs(angle) > (3 * pi) / 4:
-        angle = (-pi + angle) if angle > 0 else (pi + angle)
-        moving_backwards = True
-
-    # If heading is between 135 and 45 degrees the robot should strafe, therefore the heading needs to be adjusted by
-    # 90 degrees
-    if strafe_ok and (3 * pi) / 4 >= abs(angle) >= pi / 4:
-        moving_sideways = "left" if angle > 0 else "right"
-        angle = angle - (pi / 2) if angle > 0 else angle + (pi / 2)
-        if angle < 0:
-            moving_backwards = True
-
-    if displacement:
-        if displacement < DISTANCE_MATCH_THRESHOLD:
-            return stop()
-
-        elif abs(angle) > angle_thresh:
-            angle = int(((angle / pi) * 180) / 2)
-            return {'move': 0, 'strafe': 0, 'angle': angle, 'grabber': grabber, 'kick': 0}
-
-        else:
-            speed = 100
-            if moving_sideways:
-                speed *= -1 if moving_sideways == "left" else 1
-                return {'move': 0, 'strafe': speed, 'angle': 0, 'grabber': grabber, 'kick': 0}
-            else:
-                if careful:
-                    speed = 40
-                speed *= -1 if moving_backwards else 1
-                return {'move': speed, 'strafe': 0, 'angle': 0, 'grabber': grabber, 'kick': 0}
-
-    else:
-
-        if abs(angle) > angle_thresh:
-            angle = int(((angle / pi) * 180) / 2)
-            return {'move': 0, 'strafe': 0, 'angle': angle, 'grabber': grabber, 'kick': 0}
-        else:
-            return {'move': 0, 'strafe': 0, 'angle': 0, 'grabber': grabber, 'kick': 0}
-
-
-def stop():
-    return {'move': 0, 'strafe': 0, 'angle': 0, 'grabber': -1, 'kick': 0}

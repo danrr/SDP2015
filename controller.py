@@ -1,6 +1,7 @@
-from planning.utilities import stop
+from planning.comms_manager import CommunicationsManager
+from planning.models import World
+from planning.strategies import Intercept
 from vision.vision import Vision, Camera, GUI
-from planning.planner import Planner
 from postprocessing.postprocessing import Postprocessing
 from preprocessing.preprocessing import Preprocessing
 import vision.tools as tools
@@ -60,8 +61,6 @@ class Controller:
         # Set up postprocessing for vision
         self.postprocessing = Postprocessing()
 
-        # Set up main planner
-        self.planner = Planner(our_side=our_side, pitch_num=self.pitch)
 
         # Set up GUI
         self.GUI = GUI(calibration=self.calibration, arduino=self.arduino, pitch=self.pitch)
@@ -70,25 +69,27 @@ class Controller:
         self.side = our_side
 
         self.preprocessing = Preprocessing()
+        self.comms_manager = CommunicationsManager(self.arduino)
 
-        #Planning code
+        # Set up initial strategy
+        world = World(our_side=our_side, pitch_num=self.pitch)
+        world.our_defender.catcher_area = {'width': 50, 'height': 35, 'front_offset': 0}
+        self.strategy = Intercept(world, self.comms_manager)
 
-        self.robot = RobotController()
-
-    def send_response_to_planner(self):
-        if self.arduino.serial:
-            busy_waiting = self.arduino.serial.inWaiting()
-            if busy_waiting:
-                message = self.arduino.serial.read()
-                print ord(message)
-                if chr(ord(message)) in ["W", "S", "A", "D", "C", "V", " "]:
-                    print "Received", message
-                    self.planner.reset_time(chr(ord(message)))
-                elif ord(message) == 255:
-                    pass
-        else:
-            for message in ["W", "S", "A", "D", "C", "V", " "]:
-                self.planner.reset_time(message)
+    # def send_response_to_planner(self):
+    #     if self.arduino.serial:
+    #         busy_waiting = self.arduino.serial.inWaiting()
+    #         if busy_waiting:
+    #             message = self.arduino.serial.read()
+    #             print ord(message)
+    #             if chr(ord(message)) in ["W", "S", "A", "D", "C", "V", " "]:
+    #                 print "Received", message
+    #                 self.planner.reset_time(chr(ord(message)))
+    #             elif ord(message) == 255:
+    #                 pass
+    #     else:
+    #         for message in ["W", "S", "A", "D", "C", "V", " "]:
+    #             self.planner.reset_time(message)
 
     def wow(self):
         """
@@ -96,7 +97,6 @@ class Controller:
         """
         counter = 1L
         timer = time.clock()
-        default_actions = {'move': 0, 'strafe': 0, 'angle': 0, 'grabber': -1, 'kick': 0}
 
         try:
             c = True
@@ -109,6 +109,7 @@ class Controller:
                 frame = preprocessed['frame']
                 if 'background_sub' in preprocessed:
                     cv2.imshow('bg sub', preprocessed['background_sub'])
+
                 # Find object positions
                 # model_positions have their y coordinate inverted
 
@@ -117,26 +118,20 @@ class Controller:
 
                 # ###################### PLANNING ########################
                 # Find appropriate action
-                self.planner.update_world(model_positions)
+                self.strategy.update_world(model_positions)
+                self.strategy = self.strategy.execute()
 
-                actions = self.planner.plan()
-                if actions:
-                    self.robot.execute(self.arduino, actions)
-                    default_actions = actions
-                else:
-                    actions = default_actions
-
-                self.send_response_to_planner()
+                # self.send_response_to_planner()
 
                 # Information about the grabbers from the world
                 grabbers = {
-                    'our_defender': self.planner._world.our_defender.catcher_area,
-                    'our_attacker': self.planner._world.our_attacker.catcher_area
+                    'our_defender': self.strategy.world.our_defender.catcher_area,
+                    'our_attacker': self.strategy.world.our_defender.catcher_area,
                 }
 
                 # Information about states
                 attackerState = ["No idea", "No idea"]
-                defenderState = ["Who knows?", "Who knows?"]
+                defenderState = [self.strategy.state, ""]
                 # ######################## END PLANNING ###############################
 
                 # Use 'y', 'b', 'r' to change color.
@@ -144,100 +139,25 @@ class Controller:
                 fps = float(counter) / (time.clock() - timer)
 
                 # Draw vision content and actions
+                default_actions = {'move': 0, 'strafe': 0, 'angle': 0, 'grabber': -1, 'kick': 0}
                 self.GUI.draw(
                     frame, model_positions, regular_positions, fps, attackerState,
-                    defenderState, default_actions, actions, grabbers,
+                    defenderState, default_actions, default_actions, grabbers,
                     our_color=self.color, our_side=self.side, key=c, preprocess=pre_options)
                 counter += 1
 
         except Exception as e:
             print e.message
-            self.robot.shutdown(self.arduino)
+            self.comms_manager.shutdown()
             raise
 
         finally:
             # Write the new calibrations to a file.
             tools.save_colors(self.pitch, self.calibration)
-            self.robot.shutdown(self.arduino)
+            self.comms_manager.shutdown()
             if self.arduino.isOpen:
                 self.arduino.close()
 
-
-class RobotController(object):
-    """
-        Defender Controller
-    """
-
-    def __init__(self):
-        self.current_speed = 0
-
-    def execute(self, comm, action):
-        """
-        Execute robot action.
-        """
-
-        # Sends move forward
-        if action["move"] > 0:
-            print "Move forward: {amount}".format(amount=abs(action['move']))
-            comm.send('W', action['move'])
-
-        # Sends move backward
-        elif action['move'] < 0:
-            print "Move Backward: {amount}".format(amount=abs(action['move']))
-            comm.send('S', abs(action['move']))
-
-        #sends strafe right
-        elif action['strafe'] < 0:
-            print "Strafe right: {amount}".format(amount=abs(action['strafe']))
-            comm.send('V', abs(action['strafe']))
-
-        #sends strafe left
-        elif action['strafe'] > 0:
-            print "Strafe left: {amount}".format(amount=abs(action['strafe']))
-            comm.send('C', action['strafe'])
-
-        #sends turn right by a certain angle
-        elif action['angle'] < 0:
-            print("Turn right by " + str(abs(action['angle'] * 2)))
-            comm.send('D', abs(action['angle']))
-
-        #sends turn left by a certain angle
-        elif action['angle'] > 0:
-            print("Turn left by " + str(action['angle'] * 2))
-            comm.send('A', action['angle'])
-
-        # Else stop
-        else:
-            print "Sending stop"
-            comm.send(' ', 0)
-
-        #sends close both grabbers at the same time
-        if action['grabber'] == 0:
-            print("Close both grabbers at once")
-            comm.send('X', (action['grabber']))
-
-        #sends close right grabber first
-        elif action['grabber'] == 1:
-            print("Close right grabber first")
-            comm.send('X', 0)
-
-        #sends close left grabber first
-        elif action['grabber'] == 2:
-            print("Close left grabber first")
-            comm.send('X', 0)
-
-        elif action['grabber'] == 3:
-            print("Open grabber")
-            comm.send('Z', 0)
-
-        #sends kick command
-        elif action['kick'] > 1:
-            print("Kick")
-            comm.send('Q', action['kick'])
-
-    def shutdown(self, comm):
-        comm.send(' ', 0)
-        pass
 
 class Arduino:
     def __init__(self, port, rate, timeOut, comms):
@@ -269,10 +189,6 @@ class Arduino:
                     # raise
         else:
             print ("Communication with Arduino is turned off")
-            # self.write('A_RUN_KICK\n')
-            #self.send('A_RUN_ENGINE %d %d\n' % (0, 0))
-            #self.write('D_RUN_KICK\n')
-            #self.send('D_RUN_ENGINE %d %d\n' % (0, 0))
             self.comms = 0
 
     def send(self, string, data):
