@@ -44,5 +44,9 @@ local.properties
 # Vision calibrations
 calibrations_user.json
 
+# Croppings
+croppings.json
+
+
 # Temporary files
 *~
