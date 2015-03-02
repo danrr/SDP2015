@@ -84,3 +84,22 @@
    * Tinker with these values and plate positions on the pitch, as the lighting may be different at different parts of pitch
    * Press ESC to exit and save these values.
    
+   
+####Vision - manual calibrations - all the sliders
+ * Adjusting the main vision sliders manually from scratch, the settings for D - dot, R - red and P - plate
+   * Open vision and the window mask plate
+   * Adjust plate settings by pressing P
+     * Set CT to 100 
+     * BL to small value +- 4
+     * All upper bounds UH,US,UV to max value
+     * vary lower bounds LH,LS,LV around 60 to get rid of noise
+   * Adjust Dot by pressing D
+     * Set CT to 100
+     * BL to 0
+     * Set UH,US to max value and LV to 0
+     * Vary UV around 170. Vary LH and LS around 30 to get rid of noise
+   * Adjust Red by pressing R
+     * Set CT to 0
+     * BL to small value +-8
+     * Set US,UV to max value. LH to 0
+     * Vary UH around 10. Vary LS and LV to get rid of noise
