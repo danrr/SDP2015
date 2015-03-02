@@ -157,7 +157,8 @@ class Intercept(BaseStrategy):
 
             distance_to_move = self.world.our_defender.y - predicted_y
 
-            if self.send_correct_strafe(distance_to_move):
+            if self.send_correct_strafe(dista
+                nce_to_move):
                 self.state = "strafing"
             else:
                 # TODO: move to be closer to an ideal distance from goal self.state = "aligning", use goal_front_x
@@ -198,13 +199,33 @@ class AimAndPass(BaseStrategy):
 
         # TODO: be a lot more clever about passing: obstacle avoidance(utilities.is_shot_blocked), bounce passing
         angle = self.world.our_defender.get_rotation_to_point(self.world.our_attacker.x,
-                                                              self.world.our_attacker.y
-        )
-        if abs(angle) > TURNING_THRESHOLD:
-            self.send_correct_turn(angle)
-        else:
-            self.comms_manager.open_grabber()
-            self.world.our_defender.catcher = "open"
-            self.state = "kicking"
+                                                              self.world.our_attacker.y)
 
-        return self
+        # If the robot has a clear pass after turning by angle then pass
+        # If not then move somewhere else and pass
+        if blocked_if_turn_by_angle(angle) == False:
+            if abs(angle) > TURNING_THRESHOLD:
+                self.send_correct_turn(angle)
+            else:
+                self.comms_manager.open_grabber()
+                self.world.our_defender.catcher = "open"
+                self.state = "kicking"
+            return self
+        else:
+            # Align before strafing
+            angleToAlign = self.world.our_defender.get_rotation_to_point(self.world.our_attacker.x,
+                                                              self.world.our_defender.y)
+            if abs(angleToAlign) > TURNING_THRESHOLD:
+                self.send_correct_turn(angleToAlign)
+            else:
+                if self.controller.side == right:
+                    if self.world.our_defender.y < (self.world.pitch.height / 2):
+                        self.comms_manager.strafe_right((self.world.pitch.height / 2))
+                    else:
+                        self.comms_manager.strafe_left((self.world.pitch.height / 2))
+                else:
+                    if self.world.our_defender.y < (self.world.pitch.height / 2):
+                        self.comms_manager.strafe_left((self.world.pitch.height / 2))
+                    else:
+                        self.comms_manager.strafe_right((self.world.pitch.height / 2))
+                return self
