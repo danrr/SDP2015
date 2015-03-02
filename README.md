@@ -93,6 +93,7 @@
      * BL to small value +- 4
      * All upper bounds UH,US,UV to max value
      * vary lower bounds LH,LS,LV around 60 to get rid of noise
+     * Now move UH to around 100 to get rid of the red ball
    * Adjust Dot by pressing D
      * Set CT to 100
      * BL to 0
