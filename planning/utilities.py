@@ -41,3 +41,16 @@ def predict_y_intersection(world, predict_for_x, robot, full_width=False, bounce
         return predicted_y
     else:
         return None
+
+def is_wall_in_front(world):
+    """
+    Checks if there is a wall within the catcher area
+    """
+    robot = world.our_defender
+    zone = world.pitch.zones[world.our_defender.zone]
+
+    grabber_area = robot.catcher_area_left | robot.catcher_area_right
+    outside_polygon = (zone | grabber_area) - zone
+    outside_area = int(outside_polygon.area())
+
+    return outside_area != 0
