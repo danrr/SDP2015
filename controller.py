@@ -73,10 +73,10 @@ class Controller:
 
         # Set up initial strategy
         world = World(our_side=our_side, pitch_num=self.pitch)
-        cm_to_px = 3.9
+        cm_to_px = 3.7
         width = 21 * cm_to_px
         height = 8 * cm_to_px
-        front_offset = 5 * cm_to_px
+        front_offset = 4 * cm_to_px
         world.our_defender.catcher_area = {'width': width,
                                            'height': height,
                                            'front_offset': front_offset,
@@ -134,12 +134,12 @@ class Controller:
                 # Information about the grabbers from the world
                 grabbers = {
                     'our_defender': self.strategy.world.our_defender.catcher_area,
-                    'our_attacker': self.strategy.world.our_defender.catcher_area,
+                    'our_defender_caught': self.strategy.world.our_defender.caught_area,
                 }
 
                 # Information about states
                 attackerState = ["No idea", "No idea"]
-                defenderState = [self.strategy.state, ""]
+                defenderState = [repr(self.strategy), self.strategy.state]
                 # ######################## END PLANNING ###############################
 
                 # Use 'y', 'b', 'r' to change color.
