@@ -49,7 +49,7 @@ class BaseStrategy(object):
 
     @staticmethod
     def calculate_speed(distance):
-        speed = 25 + log(distance) * 10 if distance <= 150 else 80
+        speed = 25 + log(distance) * 5 if distance <= 150 else 80
         return int(10 * round(speed / 10))
 
     def get_bounded_ball_y(self, full_width=False):
@@ -84,7 +84,7 @@ class GoToBall(BaseStrategy):
         if self.world.our_defender.can_catch_ball(self.world.ball) and self.world.our_defender.catcher == "open":
             # TODO: make grabbers close depending on ball position
             self.world.our_defender.catcher = "closed"
-            self.comms_manager.close_grabber_center()
+            self.comms_manager.close_grabber_center
             return AimAndPass(self.world, self.comms_manager)
 
         angle = self.world.our_defender.get_rotation_to_point(self.world.ball.x, self.world.ball.y)
@@ -181,7 +181,7 @@ class AimAndPass(BaseStrategy):
         self.time = None
 
     def execute(self):
-        if not self.world.our_defender.can_catch_ball(self.world.ball):
+        if not(self.world.our_defender.has_ball(self.world.ball)):
             return GoToBall(self.world, self.comms_manager)
 
         if self.state == "kicking":

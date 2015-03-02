@@ -76,7 +76,7 @@ class Controller:
         cm_to_px = 3.9
         width = 21 * cm_to_px
         height = 8 * cm_to_px
-        front_offset = 7 * cm_to_px
+        front_offset = 5 * cm_to_px
         world.our_defender.catcher_area = {'width': width,
                                            'height': height,
                                            'front_offset': front_offset,

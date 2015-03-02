@@ -61,11 +61,11 @@ class CommunicationsManager(object):
 
     def close_grabber_right(self):
         print("Close right grabber first")
-        self.arduino.send('X', 1)
+        self.arduino.send('X', 2)
 
     def close_grabber_left(self):
         print("Close left grabber first")
-        self.arduino.send('X', 0)
+        self.arduino.send('X', 1)
 
     def open_grabber(self):
         print("Open grabber")
