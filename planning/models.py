@@ -204,8 +204,8 @@ class Robot(PitchObject):
         point2= (self.x +self._catcher_area['front_offset'],self.y -(2.5* cm_to_px))
         point3= (self.x +self._catcher_area['front_offset']+ (6*cm_to_px),self.y -(2.5* cm_to_px))
         point4= (self.x +self._catcher_area['front_offset']+ (6*cm_to_px),self.y +(10.5* cm_to_px))
-        plus= Polygon((point1,point2,point3,point4))
-        area = c1 & plus
+        square= Polygon((point1,point2,point3,point4))
+        area = c1 & square
         area.rotate(self.angle, self.x, self.y)
         return area
 
@@ -221,8 +221,8 @@ class Robot(PitchObject):
         point2= (self.x +self._catcher_area['front_offset'],self.y +(2.5* cm_to_px))
         point3= (self.x +self._catcher_area['front_offset']+ (6*cm_to_px),self.y +(2.5* cm_to_px))
         point4= (self.x +self._catcher_area['front_offset']+ (6*cm_to_px),self.y -(10.5* cm_to_px))
-        plus= Polygon((point1,point2,point3,point4))
-        area = c1 & plus
+        square= Polygon((point1,point2,point3,point4))
+        area = c1 & square
         area.rotate(self.angle, self.x, self.y)
         return area
 
@@ -254,7 +254,8 @@ class Robot(PitchObject):
         self._catcher = new_position
 
     def can_catch_ball(self, ball):
-        cm_to_px= 3.9
+        #the square increased_area increases the area where both grabbers are called to close
+        cm_to_px= self._catcher_area['cm_to_px']
         point1= (self.x +self._catcher_area['front_offset'],self.y +(3.8* cm_to_px))
         point2= (self.x +self._catcher_area['front_offset'],self.y -(3.8* cm_to_px))
         point3= (self.x +self._catcher_area['front_offset']+ (6*cm_to_px),self.y -(3.8* cm_to_px))
@@ -272,6 +273,21 @@ class Robot(PitchObject):
             return 'right'
         else:
             return None
+            
+            
+    def ball_behind_catcher(self,ball):
+        cm_to_px = self._catcher_area['cm_to_px']
+        point1= (self.x +self._catcher_area['front_offset']-1,self.y +(9.8* cm_to_px))
+        point2= (self.x +self._catcher_area['front_offset']- (6*cm_to_px),self.y +(9.8* cm_to_px))
+        point3= (self.x +self._catcher_area['front_offset']-(6*cm_to_px),self.y -(9.8* cm_to_px))
+        point4= (self.x +self._catcher_area['front_offset']- 1,self.y -(9.8* cm_to_px))
+        area= Polygon((point1,point2,point3,point4))
+        area.rotate(self.angle, self.x, self.y)
+
+        if area.isInside(ball.x,ball.y):
+            return true
+        return false
+        
 
     def has_ball(self, ball):
         '''
