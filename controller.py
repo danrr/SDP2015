@@ -222,8 +222,9 @@ class Arduino:
         return self.serial is not None
 
     def close(self):
-        self.serial.flush()
-        self.serial.close()
+        if self.serial is not None:
+            self.serial.flush()
+            self.serial.close()
 
 
 if __name__ == '__main__':
