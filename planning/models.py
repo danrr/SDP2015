@@ -1,14 +1,15 @@
 from Polygon.cPolygon import Polygon
+from Polygon.Shapes import Circle
 from math import cos, sin, hypot, pi, atan2
 from vision import tools
 
 # Width measures the front and back of an object
 # Length measures along the sides of an object
 
-#original value ROBOT_WIDTH = 30
+# original value ROBOT_WIDTH = 30
 ROBOT_WIDTH = 30
 ROBOT_LENGTH = 40
-#original value ROBOT_HEIGHT = 40
+# original value ROBOT_HEIGHT = 40
 ROBOT_HEIGHT = 10
 
 BALL_WIDTH = 5
@@ -21,9 +22,8 @@ GOAL_HEIGHT = 10
 
 
 class Coordinate(object):
-
     def __init__(self, x, y):
-        if x == None or y == None:
+        if x is None or y is None:
             raise ValueError('Can not initialize to attributes to None')
         else:
             self._x = x
@@ -39,14 +39,14 @@ class Coordinate(object):
 
     @x.setter
     def x(self, new_x):
-        if new_x == None:
+        if new_x is None:
             raise ValueError('Can not set attributes of Coordinate to None')
         else:
             self._x = new_x
 
     @y.setter
     def y(self, new_y):
-        if new_y == None:
+        if new_y is None:
             raise ValueError('Can not set attributes of Coordinate to None')
         else:
             self._y = new_y
@@ -56,10 +56,9 @@ class Coordinate(object):
 
 
 class Vector(Coordinate):
-
     def __init__(self, x, y, angle, velocity):
         super(Vector, self).__init__(x, y)
-        if angle == None or velocity == None or angle < 0 or angle >= (2*pi):
+        if angle is None or velocity is None or angle < 0 or angle >= (2 * pi):
             raise ValueError('Can not initialise attributes of Vector to None')
         else:
             self._angle = angle
@@ -75,18 +74,18 @@ class Vector(Coordinate):
 
     @angle.setter
     def angle(self, new_angle):
-        if new_angle == None or new_angle < 0 or new_angle >= (2*pi):
+        if new_angle is None or new_angle < 0 or new_angle >= (2 * pi):
             raise ValueError('Angle can not be None, also must be between 0 and 2pi')
         self._angle = new_angle
 
     @velocity.setter
     def velocity(self, new_velocity):
-        if new_velocity == None or new_velocity < 0:
+        if new_velocity is None or new_velocity < 0:
             raise ValueError('Velocity can not be None or negative')
         self._velocity = new_velocity
 
     def __eq__(self, other):
-        return (isinstance(other, self.__class__) and (self.__dict__ == other.__dict__))
+        return isinstance(other, self.__class__ and self.__dict__ == other.__dict__)
 
     def __repr__(self):
         return ('x: %s, y: %s, angle: %s, velocity: %s\n' %
@@ -95,11 +94,11 @@ class Vector(Coordinate):
 
 
 class PitchObject(object):
-    '''
+    """
     A class that describes an abstract pitch object
     Width measures the front and back of an object
     Length measures along the sides of an object
-    '''
+    """
 
     def __init__(self, x, y, angle, velocity, width, length, height, angle_offset=0):
         if width < 0 or length < 0 or height < 0:
@@ -149,29 +148,30 @@ class PitchObject(object):
 
     @vector.setter
     def vector(self, new_vector):
-        if new_vector == None or not isinstance(new_vector, Vector):
+        if new_vector is None or not isinstance(new_vector, Vector):
             raise ValueError('The new vector can not be None and must be an instance of a Vector')
         else:
-            self._vector = Vector(new_vector.x, new_vector.y, new_vector.angle - self._angle_offset, new_vector.velocity)
+            self._vector = Vector(new_vector.x, new_vector.y, new_vector.angle - self._angle_offset,
+                                  new_vector.velocity)
 
     def get_generic_polygon(self, width, length):
-        '''
+        """
         Get polygon drawn around the current object, but with some
         custom width and length:
-        '''
-        front_left = (self.x + length/2, self.y + width/2)
-        front_right = (self.x + length/2, self.y - width/2)
-        back_left = (self.x - length/2, self.y + width/2)
-        back_right = (self.x - length/2, self.y - width/2)
-        poly = Polygon((front_left, front_right, back_right, back_left))
+        """
+        front_left = (self.x + length / 2, self.y + width / 2)
+        front_right = (self.x + length / 2, self.y - width / 2)
+        back_left = (self.x - length / 2, self.y + width / 2)
+        back_right = (self.x - length / 2, self.y - width / 2)
+        poly = Polygon((front_left, front_right, back_left, back_right))
         poly.rotate(self.angle, self.x, self.y)
         return poly[0]
 
     def get_polygon(self):
-        '''
+        """
         Returns 4 edges of a rectangle bounding the current object in the
-        following order: front left, front right, bottom right, and bottom left.
-        '''
+        following order: front left, front right, bottom left and bottom right.
+        """
         return self.get_generic_polygon(self.width, self.length)
 
     def __repr__(self):
@@ -181,8 +181,8 @@ class PitchObject(object):
 
 
 class Robot(PitchObject):
-
-    def __init__(self, zone, x, y, angle, velocity, width=ROBOT_WIDTH, length=ROBOT_LENGTH, height=ROBOT_HEIGHT, angle_offset=0):
+    def __init__(self, zone, x, y, angle, velocity, width=ROBOT_WIDTH, length=ROBOT_LENGTH, height=ROBOT_HEIGHT,
+                 angle_offset=0):
         super(Robot, self).__init__(x, y, angle, velocity, width, length, height, angle_offset)
         self._zone = zone
         self._catcher = 'closed'
@@ -192,14 +192,51 @@ class Robot(PitchObject):
         return self._zone
 
     @property
-    def catcher_area(self):
-        front_left = (self.x + self._catcher_area['front_offset'] + self._catcher_area['height'], self.y + self._catcher_area['width']/2.0)
-        front_right = (self.x + self._catcher_area['front_offset'] + self._catcher_area['height'], self.y - self._catcher_area['width']/2.0)
-        back_left = (self.x + self._catcher_area['front_offset'], self.y + self._catcher_area['width']/2.0)
-        back_right = (self.x + self._catcher_area['front_offset'], self.y - self._catcher_area['width']/2.0)
-        area = Polygon((front_left, front_right, back_right, back_left))
+    def catcher_area_left(self):
+        # the grabber's tips are 3cm
+        # the space between the grabbers is 9cm
+        # each grabber is 6cm long
+        cm_to_px = self._catcher_area['cm_to_px']
+
+        c1 = Circle((6.7 * cm_to_px), (self.x + self._catcher_area['front_offset'], self.y + (3.7 * cm_to_px)), 32)
+        point1 = (self.x + self._catcher_area['front_offset'], self.y + (9 * cm_to_px))
+        point2 = (self.x + self._catcher_area['front_offset'], self.y - (2.5 * cm_to_px))
+        point3 = (self.x + self._catcher_area['front_offset'] + (10 * cm_to_px), self.y - (2.5 * cm_to_px))
+        point4 = (self.x + self._catcher_area['front_offset'] + (10 * cm_to_px), self.y + (9 * cm_to_px))
+        square = Polygon((point1, point2, point3, point4))
+        area = c1 & square
         area.rotate(self.angle, self.x, self.y)
         return area
+
+    @property
+    def catcher_area_right(self):
+        # the grabber's tips are 3cm
+        # the space between the grabbers is 9cm
+        # each grabber is 6cm long
+        cm_to_px = self._catcher_area['cm_to_px']
+
+        c1 = Circle((6.7 * cm_to_px), (self.x + self._catcher_area['front_offset'], self.y - (3.7 * cm_to_px)), 32)
+        point1 = (self.x + self._catcher_area['front_offset'], self.y - (9 * cm_to_px))
+        point2 = (self.x + self._catcher_area['front_offset'], self.y + (2.5 * cm_to_px))
+        point3 = (self.x + self._catcher_area['front_offset'] + (10 * cm_to_px), self.y + (2.5 * cm_to_px))
+        point4 = (self.x + self._catcher_area['front_offset'] + (10 * cm_to_px), self.y - (9 * cm_to_px))
+        square = Polygon((point1, point2, point3, point4))
+        area = c1 & square
+        area.rotate(self.angle, self.x, self.y)
+        return area
+
+    @property
+    def catcher_area(self):
+        return self.catcher_area_left | self.catcher_area_right
+
+    @catcher_area_left.setter
+    def catcher_area_left(self, area_dict):
+        self._catcher_area_left = area_dict
+
+    @catcher_area_right.setter
+    def catcher_area_right(self, area_dict):
+        self._catcher_area_right = area_dict
+
 
     @catcher_area.setter
     def catcher_area(self, area_dict):
@@ -209,28 +246,67 @@ class Robot(PitchObject):
     def catcher(self):
         return self._catcher
 
+    @property
+    def caught_area(self):
+        cm_to_px = self._catcher_area['cm_to_px']
+        point1 = (self.x + self._catcher_area['front_offset'] - (7 * cm_to_px), self.y + (3.8 * cm_to_px))
+        point2 = (self.x + self._catcher_area['front_offset'] - (7 * cm_to_px), self.y - (3.8 * cm_to_px))
+        point3 = (self.x + self._catcher_area['front_offset'] + (4 * cm_to_px), self.y - (3.8 * cm_to_px))
+        point4 = (self.x + self._catcher_area['front_offset'] + (4 * cm_to_px), self.y + (3.8 * cm_to_px))
+        caught_area = Polygon((point1, point2, point3, point4))
+        caught_area.rotate(self.angle, self.x, self.y)
+        return caught_area
+
     @catcher.setter
     def catcher(self, new_position):
         assert new_position in ['open', 'closed']
         self._catcher = new_position
 
     def can_catch_ball(self, ball):
-        '''
-        Get if the ball is in the catcher zone but may not have possession
-        '''
-        return self.catcher_area.isInside(ball.x, ball.y)
+        # the square increased_area increases the area where both grabbers are called to close
+        cm_to_px = self._catcher_area['cm_to_px']
+        point1 = (self.x + self._catcher_area['front_offset'], self.y + (3.8 * cm_to_px))
+        point2 = (self.x + self._catcher_area['front_offset'], self.y - (3.8 * cm_to_px))
+        point3 = (self.x + self._catcher_area['front_offset'] + (6 * cm_to_px), self.y - (3.8 * cm_to_px))
+        point4 = (self.x + self._catcher_area['front_offset'] + (6 * cm_to_px), self.y + (3.8 * cm_to_px))
+        increased_area = Polygon((point1, point2, point3, point4))
+        increased_area.rotate(self.angle, self.x, self.y)
+        grabber_area = self.catcher_area_left | self.catcher_area_right
+        both = increased_area & grabber_area
+
+        if both.isInside(ball.x, ball.y):
+            return 'both'
+        elif self.catcher_area_left.isInside(ball.x, ball.y):
+            return 'left'
+        elif self.catcher_area_right.isInside(ball.x, ball.y):
+            return 'right'
+        else:
+            return None
+
+    def ball_behind_catcher(self, ball):
+        cm_to_px = self._catcher_area['cm_to_px']
+        point1 = (self.x + self._catcher_area['front_offset'] - 1, self.y + (9.8 * cm_to_px))
+        point2 = (self.x + self._catcher_area['front_offset'] - (6 * cm_to_px), self.y + (9.8 * cm_to_px))
+        point3 = (self.x + self._catcher_area['front_offset'] - (6 * cm_to_px), self.y - (9.8 * cm_to_px))
+        point4 = (self.x + self._catcher_area['front_offset'] - 1, self.y - (9.8 * cm_to_px))
+        area = Polygon((point1, point2, point3, point4))
+        area.rotate(self.angle, self.x, self.y)
+
+        if area.isInside(ball.x, ball.y):
+            return True
+        return False
 
     def has_ball(self, ball):
-        '''
+        """
         Gets if the robot has possession of the ball
-        '''
-        return (self._catcher == 'closed') and self.can_catch_ball(ball)
+        """
+        return self._catcher == 'closed' and self.caught_area.isInside(ball.x, ball.y)
 
     def get_rotation_to_point(self, x, y):
-        '''
+        """
         This method returns an angle by which the robot needs to rotate to achieve alignment.
         It takes either an x, y coordinate of the object that we want to rotate to
-        '''
+        """
         delta_x = x - self.x
         delta_y = y - self.y
         displacement = hypot(delta_x, delta_y)
@@ -239,31 +315,31 @@ class Robot(PitchObject):
         else:
             theta = atan2(delta_y, delta_x) - atan2(sin(self.angle), cos(self.angle))
             if theta > pi:
-                theta -= 2*pi
+                theta -= 2 * pi
             elif theta < -pi:
-                theta += 2*pi
+                theta += 2 * pi
         assert -pi <= theta <= pi
         return theta
 
     def get_displacement_to_point(self, x, y):
-        '''
+        """
         This method returns the displacement between the robot and the (x, y) coordinate.
-        '''
+        """
         delta_x = x - self.x
         delta_y = y - self.y
         displacement = hypot(delta_x, delta_y)
         return displacement
 
     def get_direction_to_point(self, x, y):
-        '''
+        """
         This method returns the displacement and angle to coordinate x, y.
-        '''
+        """
         return self.get_displacement_to_point(x, y), self.get_rotation_to_point(x, y)
 
     def get_pass_path(self, target):
-        '''
+        """
         Gets a path represented by a Polygon for the area for passing ball between two robots
-        '''
+        """
         robot_poly = self.get_polygon()
         target_poly = target.get_polygon()
         return Polygon(robot_poly[0], robot_poly[1], target_poly[0], target_poly[1])
@@ -275,13 +351,11 @@ class Robot(PitchObject):
 
 
 class Ball(PitchObject):
-
     def __init__(self, x, y, angle, velocity):
         super(Ball, self).__init__(x, y, angle, velocity, BALL_WIDTH, BALL_LENGTH, BALL_HEIGHT)
 
 
 class Goal(PitchObject):
-
     def __init__(self, zone, x, y, angle):
         super(Goal, self).__init__(x, y, angle, 0, GOAL_WIDTH, GOAL_LENGTH, GOAL_HEIGHT)
         self._zone = zone
@@ -296,15 +370,17 @@ class Goal(PitchObject):
 
 
 class Pitch(object):
-    '''
+    """
     Class that describes the pitch
-    '''
+    """
 
     def __init__(self, pitch_num):
         config_json = tools.get_croppings(pitch=pitch_num)
 
-        self._width = max([point[0] for point in config_json['outline']]) - min([point[0] for point in config_json['outline']])
-        self._height = max([point[1] for point in config_json['outline']]) - min([point[1] for point in config_json['outline']])
+        self._width = max([point[0] for point in config_json['outline']]) - min(
+            [point[0] for point in config_json['outline']])
+        self._height = max([point[1] for point in config_json['outline']]) - min(
+            [point[1] for point in config_json['outline']])
         # Getting the zones:
         self._zones = []
         self._zones.append(Polygon([(x, self._height - y) for (x, y) in config_json['Zone_0']]))
@@ -313,9 +389,9 @@ class Pitch(object):
         self._zones.append(Polygon([(x, self._height - y) for (x, y) in config_json['Zone_3']]))
 
     def is_within_bounds(self, robot, x, y):
-        '''
+        """
         Checks whether the position/point planned for the robot is reachable
-        '''
+        """
         zone = self._zones[robot.zone]
         return zone.isInside(x, y)
 
@@ -336,9 +412,9 @@ class Pitch(object):
 
 
 class World(object):
-    '''
+    """
     This class describes the environment
-    '''
+    """
 
     def __init__(self, our_side, pitch_num):
         assert our_side in ['left', 'right']
@@ -353,8 +429,8 @@ class World(object):
         self._robots.append(Robot(2, 0, 0, 0, 0))
         self._robots.append(Robot(3, 0, 0, 0, 0))
         self._goals = []
-        self._goals.append(Goal(0, 0, self._pitch.height/2.0, 0))
-        self._goals.append(Goal(3, self._pitch.width, self._pitch.height/2.0, pi))
+        self._goals.append(Goal(0, 0, self._pitch.height / 2.0, 0))
+        self._goals.append(Goal(3, self._pitch.width, self._pitch.height / 2.0, pi))
 
     @property
     def our_attacker(self):
@@ -392,9 +468,13 @@ class World(object):
     def pitch(self):
         return self._pitch
 
+    @property
+    def our_side(self):
+        return self._our_side
+
     def update_positions(self, pos_dict):
-        ''' This method will update the positions of the pitch objects
-            that it gets passed by the vision system '''
+        """ This method will update the positions of the pitch objects
+            that it gets passed by the vision system """
         self.our_attacker.vector = pos_dict['our_attacker']
         self.their_attacker.vector = pos_dict['their_attacker']
         self.our_defender.vector = pos_dict['our_defender']
@@ -409,10 +489,13 @@ class World(object):
             elif self.their_attacker.get_displacement_to_point(self.old_ball.x, self.old_ball.y) <= 20:
                 self.ball.vector = pos_dict['their_attacker']
             elif self.our_defender.get_displacement_to_point(self.old_ball.x, self.old_ball.y) <= 20:
-                self.ball.vector = pos_dict['our_defender']
+                if self.our_defender.has_ball(self.old_ball):
+                    self.ball.vector = pos_dict['our_defender']
+                else:
+                    behind = 10 if self.our_side == 'right' else -10
+                    vector = pos_dict['our_defender']
+                    self.ball.vector = Vector(vector.x + behind, vector.y, vector.angle, vector.velocity)
             elif self.their_defender.get_displacement_to_point(self.old_ball.x, self.old_ball.y) <= 20:
                 self.ball.vector = pos_dict['their_defender']
-
         self.old_ball.vector = self.ball.vector
-
         # Checking if the robot locations make sense:

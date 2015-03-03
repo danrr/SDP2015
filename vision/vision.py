@@ -269,7 +269,7 @@ class Camera(object):
             frame, self.c_matrix, self.dist, None, self.nc_matrix)
 
     def get_adjusted_center(self, frame):
-        return (320-self.crop_values[0], 240-self.crop_values[2])
+        return 320-self.crop_values[0], 240-self.crop_values[2]
 
 
 class GUI(object):
@@ -324,7 +324,7 @@ class GUI(object):
     def cast_binary(self, x):
         return x == 1
 
-    def draw(self, frame, model_positions, actions, regular_positions, fps,
+    def draw(self, frame, model_positions, regular_positions, fps,
              aState, dState, a_action, d_action, grabbers, our_color, our_side,
              key=None, preprocess=None):
         """
@@ -480,16 +480,16 @@ class GUI(object):
 
     def draw_grabbers(self, frame, grabbers, height):
         def_grabber = grabbers['our_defender'][0]
-        att_grabber = grabbers['our_attacker'][0]
+        def_grabber_caught = grabbers['our_defender_caught'][0]
 
         def_grabber = [(x, height - y) for x, y in def_grabber]
-        att_grabber = [(x, height - y) for x, y in att_grabber]
+        def_grabber_caught = [(x, height - y) for x, y in def_grabber_caught]
 
         def_grabber = [(int(x) if x > -1 else 0, int(y) if y > -1 else 0) for x, y in def_grabber]
-        att_grabber = [(int(x) if x > -1 else 0, int(y) if y > -1 else 0) for x, y in att_grabber]
+        def_grabber_caught = [(int(x) if x > -1 else 0, int(y) if y > -1 else 0) for x, y in def_grabber_caught]
 
         cv2.polylines(frame, [np.array(def_grabber)], True, BGR_COMMON['red'], 1)
-        cv2.polylines(frame, [np.array(att_grabber)], True, BGR_COMMON['red'], 1)
+        cv2.polylines(frame, [np.array(def_grabber_caught)], True, BGR_COMMON['orange'], 1)
 
     def draw_velocity(self, frame, frame_offset, x, y, angle, vel, scale=10):
         if not(None in [frame, x, y, angle, vel]) and vel is not 0:
