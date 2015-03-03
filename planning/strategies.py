@@ -76,6 +76,23 @@ class BaseStrategy(object):
         return False
 
 
+class Init(BaseStrategy):
+    def __init__(self, world, comms_manager):
+        super(Init, self).__init__(world, comms_manager)
+
+    def __repr__(self):
+        return "Initialize"
+
+    def execute(self):
+        if self.world.pitch.zones[self.world.our_defender.zone].isInside(self.world.ball.x, self.world.ball.y):
+            if self.world.our_defender.has_ball:
+                return AimAndPass(self.world, self.comms_manager)
+            else:
+                return GoToBall(self.world, self.comms_manager)
+        else:
+            return Intercept(self.world, self.comms_manager)
+
+
 class GoToBall(BaseStrategy):
     def __init__(self, world, comms_manager):
         super(GoToBall, self).__init__(world, comms_manager)
