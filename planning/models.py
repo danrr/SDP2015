@@ -486,9 +486,12 @@ class World(object):
             elif self.their_attacker.get_displacement_to_point(self.old_ball.x, self.old_ball.y) <= 20:
                 self.ball.vector = pos_dict['their_attacker']
             elif self.our_defender.get_displacement_to_point(self.old_ball.x, self.old_ball.y) <= 20:
-                behind = 10 if self.our_side == 'right' else -10
-                vector = pos_dict['our_defender']
-                self.ball.vector = Vector(vector.x + behind, vector.y, vector.angle, vector.velocity)
+                if self.our_defender.has_ball(self.old_ball):
+                    self.ball.vector = pos_dict['our_defender']
+                else:
+                    behind = 10 if self.our_side == 'right' else -10
+                    vector = pos_dict['our_defender']
+                    self.ball.vector = Vector(vector.x + behind, vector.y, vector.angle, vector.velocity)
             elif self.their_defender.get_displacement_to_point(self.old_ball.x, self.old_ball.y) <= 20:
                 self.ball.vector = pos_dict['their_defender']
         self.old_ball.vector = self.ball.vector

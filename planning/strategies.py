@@ -103,7 +103,6 @@ class GoToBall(BaseStrategy):
         if self.send_correct_catch():
             return AimAndPass(self.world, self.comms_manager)
 
-
         angle = self.world.our_defender.get_rotation_to_point(self.world.ball.x, self.world.ball.y)
         if abs(angle) > TURNING_THRESHOLD:
             self.send_correct_turn(angle)
