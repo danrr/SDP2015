@@ -1,5 +1,5 @@
 from math import pi, log
-from planning.utilities import predict_y_intersection, is_shot_blocked
+from planning.utilities import predict_y_intersection, is_shot_blocked, is_wall_in_front
 import time
 
 GOAL_ALIGN_OFFSET = 50
@@ -161,10 +161,10 @@ class Intercept(BaseStrategy):
 
             # if the ball is moving slowly or not at all, attempt to
             if self.world.ball.velocity <= BALL_VELOCITY or predicted_y is None:
-                predicted_y = predict_y_intersection(self.world,
-                                                     self.world.our_defender.x,
-                                                     self.world.their_attacker,
-                                                     bounce=True)
+                # predicted_y = predict_y_intersection(self.world,
+                #                                      self.world.our_defender.x,
+                #                                      self.world.their_attacker,
+                #                                      bounce=True)
 
                 if self.world.our_defender.catcher == "open":
                     self.comms_manager.close_grabber_center()

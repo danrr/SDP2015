@@ -48,7 +48,7 @@ class Controller:
         self.camera = Camera(port=video_port, pitch=self.pitch)
         frame = self.camera.get_frame()
         # gets center of the frame based on the table croppings,
-        #TODO Check whether this is working correctly, as it gets the left and top coordinate from croppings and always substracts it
+        # TODO Check whether this is working correctly, as it gets the left and top coordinate from croppings and always subtracts it
         center_point = self.camera.get_adjusted_center(frame)
 
         # Set up vision
@@ -60,7 +60,6 @@ class Controller:
 
         # Set up postprocessing for vision
         self.postprocessing = Postprocessing()
-
 
         # Set up GUI
         self.GUI = GUI(calibration=self.calibration, arduino=self.arduino, pitch=self.pitch)
@@ -74,8 +73,8 @@ class Controller:
         # Set up initial strategy
         world = World(our_side=our_side, pitch_num=self.pitch)
         cm_to_px = 3.7
-        width = 21 * cm_to_px
-        height = 8 * cm_to_px
+        width = 18 * cm_to_px
+        height = 9 * cm_to_px
         front_offset = 4 * cm_to_px
         world.our_defender.catcher_area = {'width': width,
                                            'height': height,
@@ -112,7 +111,7 @@ class Controller:
 
                 frame = self.camera.get_frame()
                 pre_options = self.preprocessing.options
-                # Apply preprocessing methods toggled in the UI
+                # Apply pre-processing methods toggled in the UI
                 preprocessed = self.preprocessing.run(frame, pre_options)
                 frame = preprocessed['frame']
                 if 'background_sub' in preprocessed:
@@ -190,13 +189,13 @@ class Arduino:
                     self.serial = serial.Serial(self.port, self.rate, timeout=self.timeout)
                     self.heartBeat()
                 except Exception as e:
-                    print ("No Arduino detected!")
-                    print ("Continuing without comms.")
-                    print (e)
+                    print("No Arduino detected!")
+                    print("Continuing without comms.")
+                    print(e)
                     self.comms = 0
                     # raise
         else:
-            print ("Communication with Arduino is turned off")
+            print("Communication with Arduino is turned off")
             self.comms = 0
 
     def send(self, string, data):
@@ -210,11 +209,11 @@ class Arduino:
         self.serial.write("L" + bits_toSend)
         time.sleep(0.3)
         bits_waiting = self.serial.inWaiting()
-        if (bits_waiting):
-            if (self.serial.read() == bits_toSend):
-                print ("Communication estabilished - correct response")
+        if bits_waiting:
+            if self.serial.read() == bits_toSend:
+                print("Communication established - correct response")
             else:
-                print ("Communication estabilished - incorrect response")
+                print("Communication established - incorrect response")
         else:
             print ("Communication not established")
 
@@ -228,23 +227,22 @@ class Arduino:
 
 if __name__ == '__main__':
     # argparse is used for including help -h to python command line, also to translate arguments like nocomms
-    #from -n to True or False
+    # from -n to True or False
     import argparse
 
     parser = argparse.ArgumentParser()
     parser.add_argument("pitch", help="[0] Main pitch, [1] Secondary pitch")
     parser.add_argument("side", help="The side of our defender ['left', 'right'] allowed.")
     parser.add_argument("color", help="The color of our team - ['yellow', 'blue'] allowed.")
-    #store_true translates -n or --nocomms to True value for comms argument
+    # store_true translates -n or --nocomms to True value for comms argument
     parser.add_argument(
         "-n", "--nocomms", help="Disables sending commands to the robot.", action="store_true")
 
     args = parser.parse_args()
-    #Based on nocomms value ( -n / --nocomms) turns off or on the communications for arduino
+    # Based on nocomms value ( -n / --nocomms) turns off or on the communications for arduino
     if args.nocomms:
         c = Controller(
             pitch=int(args.pitch), color=args.color, our_side=args.side, comms=0).wow()
     else:
         c = Controller(
             pitch=int(args.pitch), color=args.color, our_side=args.side).wow()
-

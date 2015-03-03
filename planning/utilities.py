@@ -1,4 +1,4 @@
-from math import tan, pi, hypot
+from math import tan, pi
 
 
 def is_shot_blocked(world, angle_to_turn=0):
@@ -21,16 +21,16 @@ def predict_y_intersection(world, predict_for_x, robot, full_width=False, bounce
     """
     x = robot.x
     y = robot.y
-    top_y = world._pitch.height - 60 if full_width else world.our_goal.y + (world.our_goal.width / 2) - 30
+    top_y = world.pitch.height - 60 if full_width else world.our_goal.y + (world.our_goal.width / 2) - 30
     bottom_y = 60 if full_width else world.our_goal.y - (world.our_goal.width / 2) + 30
     angle = robot.angle + angle_to_turn
     if (robot.x < predict_for_x and not (pi / 2 < angle < 3 * pi / 2)) or \
             (robot.x > predict_for_x and (3 * pi / 2 > angle > pi / 2)):
         if bounce:
-            if not (0 <= (y + tan(angle) * (predict_for_x - x)) <= world._pitch.height):
-                bounce_pos = 'top' if (y + tan(angle) * (predict_for_x - x)) > world._pitch.height else 'bottom'
-                x += (world._pitch.height - y) / tan(angle) if bounce_pos == 'top' else (0 - y) / tan(angle)
-                y = world._pitch.height if bounce_pos == 'top' else 0
+            if not (0 <= (y + tan(angle) * (predict_for_x - x)) <= world.pitch.height):
+                bounce_pos = 'top' if (y + tan(angle) * (predict_for_x - x)) > world.pitch.height else 'bottom'
+                x += (world.pitch.height - y) / tan(angle) if bounce_pos == 'top' else (0 - y) / tan(angle)
+                y = world.pitch.height if bounce_pos == 'top' else 0
                 angle = (-angle) % (2 * pi)
         predicted_y = (y + tan(angle) * (predict_for_x - x))
         # Correcting the y coordinate to the closest y coordinate on the goal line:
@@ -41,7 +41,6 @@ def predict_y_intersection(world, predict_for_x, robot, full_width=False, bounce
         return predicted_y
     else:
         return None
-
 
 
 def is_wall_in_front(world):
