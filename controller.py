@@ -62,7 +62,7 @@ class Controller:
         self.postprocessing = Postprocessing()
 
         # Set up GUI
-        self.GUI = GUI(calibration=self.calibration, arduino=self.arduino, pitch=self.pitch)
+        self.GUI = GUI(calibration=self.calibration, arduino=self.arduino, pitch=self.pitch, capture=self.camera.capture)
 
         self.color = color
         self.side = our_side
@@ -108,8 +108,9 @@ class Controller:
         try:
             c = True
             while c != 27:  # the ESC key
+                #gets frame, and sets whether we are using real video feed or calibration one
+                frame = self.camera.get_frame(self.GUI.calibration_loop)
 
-                frame = self.camera.get_frame()
                 pre_options = self.preprocessing.options
                 # Apply pre-processing methods toggled in the UI
                 preprocessed = self.preprocessing.run(frame, pre_options)
@@ -221,8 +222,9 @@ class Arduino:
         return self.serial is not None
 
     def close(self):
-        self.serial.flush()
-        self.serial.close()
+        if self.serial is not None:
+            self.serial.flush()
+            self.serial.close()
 
 
 if __name__ == '__main__':

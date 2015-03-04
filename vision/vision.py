@@ -6,6 +6,9 @@ from colors import BGR_COMMON
 from collections import namedtuple
 import numpy as np
 from findHSV import CalibrationGUI
+from collections import deque
+from Polygon.cPolygon import Polygon
+
 
 
 TEAM_COLORS = set(['yellow', 'blue'])
@@ -210,7 +213,6 @@ class Vision:
         # terminate processes
         for process in processes:
             process.join()
-
         return positions
 
     def to_info(self, args, height):
@@ -248,16 +250,25 @@ class Camera(object):
         self.nc_matrix = radial_data['new_camera_matrix']
         self.c_matrix = radial_data['camera_matrix']
         self.dist = radial_data['dist']
+        #used for calibration loop
+        self.frameNo = 0
 
-    def get_frame(self):
+    def get_frame(self,calibration_loop = False):
         """
         Retrieve a frame from the camera.
 
         Returns the frame if available, otherwise returns None.
         """
-        # status, frame = True, cv2.imread('img/i_all/00000003.jpg')
-        status, frame = self.capture.read()
-        frame = self.fix_radial_distortion(frame)
+        #counts the frame no's for video loop
+        if (calibration_loop):
+            status, frame = True, cv2.imread('img/test'+ str(self.frameNo) + '.jpg')
+            if self.frameNo==19:
+                self.frameNo = 0
+            else:
+                self.frameNo += 1
+        else:
+            status, frame = self.capture.read()
+        #frame = self.fix_radial_distortion(frame)
         if status:
             return frame[
                 self.crop_values[2]:self.crop_values[3],
@@ -272,21 +283,28 @@ class Camera(object):
         return 320-self.crop_values[0], 240-self.crop_values[2]
 
 
+
+
+
 class GUI(object):
 
     VISION = 'SUCH VISION'
     BG_SUB = 'BG Subtract'
     NORMALIZE = 'Normalize  '
     COMMS = 'Communications on/off '
+    CALIB_LOOP = 'Calibration Loop'
 
     def nothing(self, x):
         pass
 
-    def __init__(self, calibration, arduino, pitch):
+    def __init__(self, calibration, arduino, pitch,capture):
         self.zones = None
         self.calibration_gui = CalibrationGUI(calibration)
         self.arduino = arduino
         self.pitch = pitch
+        self.capture =capture
+        #identifies whteher we are using loop or real video feed
+        self.calibration_loop = False
 
         cv2.namedWindow(self.VISION)
 
@@ -296,6 +314,9 @@ class GUI(object):
         #it will incorrectly reflect the communications state
         cv2.createTrackbar(
             self.COMMS, self.VISION, self.arduino.comms, 1, lambda x:  self.arduino.setComms(x))
+        cv2.createTrackbar(self.CALIB_LOOP,self.VISION,0, 1,lambda x: self.set_calibration_loop(x))
+        #20 zeroes, arbitrary number
+        self.jitterQueue = deque([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 
     def to_info(self, args):
         """
@@ -323,6 +344,17 @@ class GUI(object):
 
     def cast_binary(self, x):
         return x == 1
+
+    #For all robots/plates on the field takes how much they have moved since the last frame
+    #Computes the jitter factor
+    def calcJitterFactor(self,model_positions):
+        for name, info in model_positions.iteritems():
+            if name != 'ball':
+                if not(info.x is None) and not(info.y is None):
+                    #print abs(info.velocity)
+                    self.jitterQueue.append(abs(info.velocity))
+                    self.jitterQueue.popleft()
+
 
     def draw(self, frame, model_positions, regular_positions, fps,
              aState, dState, a_action, d_action, grabbers, our_color, our_side,
@@ -354,6 +386,33 @@ class GUI(object):
         # Draw fps on the canvas
         if fps is not None:
             self.draw_text(frame, 'FPS: %.1f' % fps, 0, 10, BGR_COMMON['green'], 1)
+
+        #calculates the jitter factor per 20 frames, 19 is just an arbitrary number
+        self.calcJitterFactor(model_positions)
+        jitterFactor = 0
+        for jitterFrame in self.jitterQueue:
+            jitterFactor += jitterFrame
+        #indicates whether we can see all robots
+        can_see_all = True
+        for key in ['our_defender', 'our_attacker', 'their_defender', 'their_attacker']:
+            for label in regular_positions[key]:
+                #if some of box direction angle is none we cant see the plate
+                if (regular_positions[key][label] == None):
+                    can_see_all = False
+                #check if the box is of a reasonable size
+                elif (label=='box'):
+                        area = Polygon(regular_positions[key][label]).area()
+                        #guessed reasonable number
+                        if (area<600):
+                            can_see_all = False
+
+
+        if can_see_all:
+            self.draw_text(frame,'%.1f JITTERS' % jitterFactor,415,15,BGR_COMMON['green'],thickness = 1.5, size = 0.4)
+        else:
+            self.draw_text(frame,'CANT SEE' ,415,15,BGR_COMMON['red'],thickness = 1.5,size = 0.4)
+
+
 
         if preprocess is not None:
             preprocess['normalize'] = self.cast_binary(
@@ -413,7 +472,6 @@ class GUI(object):
     def draw_robot(self, frame, position_dict, color):
         if position_dict['box']:
             cv2.polylines(frame, [np.array(position_dict['box'])], True, BGR_COMMON[color], 2)
-
         if position_dict['front']:
             p1 = (position_dict['front'][0][0], position_dict['front'][0][1])
             p2 = (position_dict['front'][1][0], position_dict['front'][1][1])
@@ -524,6 +582,22 @@ class GUI(object):
             frame, "Angle: " + str(action['angle']), x, y + 25, color=BGR_COMMON['white'])
         self.draw_text(frame, "Kick: " + str(action['kick']), x, y + 35, color=BGR_COMMON['white'])
         self.draw_text(frame, "Grabber: " + str(action['grabber']), x, y + 45, color=BGR_COMMON['white'])
+
+    #sets whether we are using calibration loop or real video feed
+    def set_calibration_loop(self,value):
+        self.calibration_loop = value
+        #capture video
+        #first frame is usually distorted, want to ditch it
+        ret, frame = self.capture.read()
+        #20 is number of images we have captured
+        if value:
+            i=0
+            while i!= 20:
+                ret, frame = self.capture.read()
+                cv2.imwrite('img/test' + str(i) + '.jpg', frame)
+                i += 1
+
+
 
 
 if __name__ == '__main__':
