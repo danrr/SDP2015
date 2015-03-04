@@ -86,6 +86,10 @@
    
    
 ####Vision - manual calibrations - all the sliders
+ * For best results turn calibrate option on in the main gui (slider above the feed). This captures a short loop of the video and displays it.
+ * When varying the values the amound of jitters displayed in the top right part of the screen is helpful. The goal is to have have them as small as possible.
+  
+ 
  * Adjusting the main vision sliders manually from scratch, the settings for D - dot, R - red and P - plate
    * Open vision and the window mask plate
    * Adjust plate settings by pressing P
@@ -104,3 +108,4 @@
      * BL to small value +-8
      * Set US,UV to max value. LH to 0
      * Vary UH around 10. Vary LS and LV to get rid of noise
+     
