@@ -253,20 +253,21 @@ class Camera(object):
         #used for calibration loop
         self.frameNo = 0
 
-    def get_frame(self):
+    def get_frame(self,calibration_loop = False):
         """
         Retrieve a frame from the camera.
 
         Returns the frame if available, otherwise returns None.
         """
-        #counts the framen nos for video loop
-        #status, frame = True, cv2.imread('img/test'+ str(self.frameNo) + '.jpg')
-        if self.frameNo==19:
-            self.frameNo = 0
+        #counts the frame no's for video loop
+        if (calibration_loop):
+            status, frame = True, cv2.imread('img/test'+ str(self.frameNo) + '.jpg')
+            if self.frameNo==19:
+                self.frameNo = 0
+            else:
+                self.frameNo += 1
         else:
-            self.frameNo += 1
-        status, frame = self.capture.read()
-
+            status, frame = self.capture.read()
         #frame = self.fix_radial_distortion(frame)
         if status:
             return frame[
@@ -282,21 +283,28 @@ class Camera(object):
         return 320-self.crop_values[0], 240-self.crop_values[2]
 
 
+
+
+
 class GUI(object):
 
     VISION = 'SUCH VISION'
     BG_SUB = 'BG Subtract'
     NORMALIZE = 'Normalize  '
     COMMS = 'Communications on/off '
+    CALIB_LOOP = 'Calibration Loop'
 
     def nothing(self, x):
         pass
 
-    def __init__(self, calibration, arduino, pitch):
+    def __init__(self, calibration, arduino, pitch,capture):
         self.zones = None
         self.calibration_gui = CalibrationGUI(calibration)
         self.arduino = arduino
         self.pitch = pitch
+        self.capture =capture
+        #identifies whteher we are using loop or real video feed
+        self.calibration_loop = False
 
         cv2.namedWindow(self.VISION)
 
@@ -306,6 +314,7 @@ class GUI(object):
         #it will incorrectly reflect the communications state
         cv2.createTrackbar(
             self.COMMS, self.VISION, self.arduino.comms, 1, lambda x:  self.arduino.setComms(x))
+        cv2.createTrackbar(self.CALIB_LOOP,self.VISION,0, 1,lambda x: self.set_calibration_loop(x))
         #20 zeroes, arbitrary number
         self.jitterQueue = deque([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 
@@ -396,7 +405,6 @@ class GUI(object):
                         #guessed reasonable number
                         if (area<600):
                             can_see_all = False
-                        print area
 
 
         if can_see_all:
@@ -464,7 +472,6 @@ class GUI(object):
     def draw_robot(self, frame, position_dict, color):
         if position_dict['box']:
             cv2.polylines(frame, [np.array(position_dict['box'])], True, BGR_COMMON[color], 2)
-        print position_dict
         if position_dict['front']:
             p1 = (position_dict['front'][0][0], position_dict['front'][0][1])
             p2 = (position_dict['front'][1][0], position_dict['front'][1][1])
@@ -575,6 +582,22 @@ class GUI(object):
             frame, "Angle: " + str(action['angle']), x, y + 25, color=BGR_COMMON['white'])
         self.draw_text(frame, "Kick: " + str(action['kick']), x, y + 35, color=BGR_COMMON['white'])
         self.draw_text(frame, "Grabber: " + str(action['grabber']), x, y + 45, color=BGR_COMMON['white'])
+
+    #sets whether we are using calibration loop or real video feed
+    def set_calibration_loop(self,value):
+        self.calibration_loop = value
+        #capture video
+        #first frame is usually distorted, want to ditch it
+        ret, frame = self.capture.read()
+        #20 is number of images we have captured
+        if value:
+            i=0
+            while i!= 20:
+                ret, frame = self.capture.read()
+                cv2.imwrite('img/test' + str(i) + '.jpg', frame)
+                i += 1
+
+
 
 
 if __name__ == '__main__':
