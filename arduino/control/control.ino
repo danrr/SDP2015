@@ -28,6 +28,7 @@ byte min_time = 255;  // the minimum time (in us)
 int targetHeading, headingDiff;
 
 int turnPower;
+int strafePower;
 
 /* Assign a unique ID to the sensors */
 
@@ -148,7 +149,7 @@ void fetchCommand() {
   if (Serial.available() >= 2) {
     cmd = (char)Serial.read();
     data = (char)Serial.read();
-    response = 0x00;
+    response = cmd;
   }
 }
 
@@ -168,7 +169,7 @@ void decodeCommand() {
       motorStop(_BACK_DRIVE);
       commands[0].millis = current_millis;
       commands[0].functionPtr = &moveForward;
-      commands[0].data = data;
+      commands[0].data = data; 
       break;
 
     case _BACKWARD:
@@ -208,23 +209,32 @@ void decodeCommand() {
       break;
 
     case _STRAFE_LEFT:
-      if (commands[0].functionPtr != &strafe) {
+      if (commands[0].functionPtr != &strafeLeft) {
         targetHeading = getCurrentHeading();
       }
+      strafePower = 0;
+      turnPower = 0;
+      motorStop(_LEFT_DRIVE);
+      motorStop(_RIGHT_DRIVE);
+      motorStop(_BACK_DRIVE);
+
       commands[0].millis = current_millis;
-      commands[0].functionPtr = &strafe;
+      commands[0].functionPtr = &strafeLeft;
       commands[0].data = data;
-      motorBackward(_BACK_DRIVE, data);
       break;
 
     case _STRAFE_RIGHT:
-      if (commands[0].functionPtr != &strafe) {
+      if (commands[0].functionPtr != &strafeRight) {
         targetHeading = getCurrentHeading();
       }
-      commands[0].millis = current_millis;
-      commands[0].functionPtr = &strafe;
+      strafePower = 0;
+      turnPower = 0;
+      motorStop(_LEFT_DRIVE);
+      motorStop(_RIGHT_DRIVE);
+      motorStop(_BACK_DRIVE);
+      commands[0].millis = current_millis + 200;
+      commands[0].functionPtr = &strafeRight;
       commands[0].data = data;
-      motorForward(_BACK_DRIVE, data);
       break;
 
     // kick commands
@@ -444,23 +454,59 @@ void releaseBrakes(byte data) {
   }
 }
 
-void strafe(byte data) {
+void strafeRight(byte data) {
+  if (strafePower < data) {
+    strafePower+= 10;
+  }
+  motorForward(_BACK_DRIVE, strafePower);
+  applyStrafingFeedback();
+  commands[0].millis += 50;
+}
+
+void strafeLeft(byte data) {
+  if (strafePower < data) {
+    strafePower+= 20;
+  }
+  else if (strafePower > data) {
+    strafePower = data;
+  }
+  motorBackward(_BACK_DRIVE, strafePower);
+  applyStrafingFeedback();
+  commands[0].millis += 50;
+}
+
+void applyStrafingFeedback() {
   int heading = getCurrentHeading();
   headingDiff = getHeadingDiff(targetHeading, heading);
   if (headingDiff > _HEADING_TOLERANCE) {
-    motorForward(_LEFT_DRIVE, 40);
-    motorForward(_RIGHT_DRIVE, 40);
+    turnPower = headingDiff + 20;
   }
   else if (headingDiff < -(_HEADING_TOLERANCE)) {
-    motorBackward(_LEFT_DRIVE, 40);
-    motorBackward(_RIGHT_DRIVE, 40);
+    turnPower = headingDiff - 20;
+  }
+  else {
+    turnPower = 0;
+  }
+
+  if (turnPower > 100) {
+    turnPower = 100;
+  }
+  else if (turnPower < -100) {
+    turnPower = -100;
+  }
+
+  if (turnPower > 20) {
+    motorForward(_LEFT_DRIVE, turnPower);
+    motorForward(_RIGHT_DRIVE, turnPower);
+  }
+  else if (turnPower < -20) {
+    motorBackward(_LEFT_DRIVE, -turnPower);
+    motorBackward(_RIGHT_DRIVE, -turnPower);
   }
   else {
     motorBrake(_LEFT_DRIVE);
     motorBrake(_RIGHT_DRIVE);
   }
-
-  commands[0].millis += 50;
 }
 
 //grabber commands
@@ -477,9 +523,28 @@ void slowOpenGrabber(byte data) {
 }
 
 void startCloseGrabber(byte data) {
-  motorForward(_LEFT_GRABBER, 100);
-  motorBackward(_RIGHT_GRABBER, 100);
-  voidCommand(4);
+  if (!commands[3].millis) {
+    if (data == 1) {
+      // Close left grabber first
+      motorForward(_LEFT_GRABBER, 100);
+      motorBackward(_RIGHT_GRABBER, 20);
+    } 
+    else if (data == 2) {
+      // Close right grabber first
+      motorForward(_LEFT_GRABBER, 10);
+      motorBackward(_RIGHT_GRABBER, 100);
+    }
+    else {
+      motorForward(_LEFT_GRABBER, 100);
+      motorBackward(_RIGHT_GRABBER, 100);
+    }
+    voidCommand(4);
+  }
+  else {
+    commands[4].millis += 200;
+    commands[5].millis += 200;
+    commands[6].millis += 200;
+  }
 }
 
 void slowCloseGrabber(byte data) {
