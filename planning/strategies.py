@@ -86,7 +86,7 @@ class Init(BaseStrategy):
     def execute(self):
         if self.world.pitch.zones[self.world.our_defender.zone].isInside(self.world.ball.x, self.world.ball.y):
             if self.world.our_defender.has_ball:
-                return AimAndPass(self.world, self.comms_manager)
+                return BouncePass(self.world, self.comms_manager)
             else:
                 return GoToBall(self.world, self.comms_manager)
         else:
@@ -106,7 +106,7 @@ class GoToBall(BaseStrategy):
             return Intercept(self.world, self.comms_manager)
 
         if self.world.our_defender.has_ball(self.world.ball):
-            return AimAndPass(self.world, self.comms_manager)
+            returnBouncePass(self.world, self.comms_manager)
 
         if self.world.our_defender.catcher == "closed":
             # move back if the ball is in the catcher area
@@ -118,7 +118,7 @@ class GoToBall(BaseStrategy):
             return self
 
         if self.send_correct_catch():
-            return AimAndPass(self.world, self.comms_manager)
+            return BouncePass(self.world, self.comms_manager)
 
         angle = self.world.our_defender.get_rotation_to_point(self.world.ball.x, self.world.ball.y)
         if abs(angle) > TURNING_THRESHOLD:
@@ -151,10 +151,10 @@ class Intercept(BaseStrategy):
 
         # if can catch, catch and go to aim and shoot
         if self.send_correct_catch():
-            return AimAndPass(self.world, self.comms_manager)
+            return BouncePass(self.world, self.comms_manager)
 
         if self.world.our_defender.has_ball(self.world.ball):
-            return AimAndPass(self.world, self.comms_manager)
+            return BouncePass(self.world, self.comms_manager)
 
         # turn to face enemy attacker
         angle = self.world.our_defender.get_rotation_to_point(self.world.pitch.width / 2, self.world.our_defender.y)
@@ -266,4 +266,79 @@ class AimAndPass(BaseStrategy):
                 else:
                     distance = self.world.pitch.height / 9 - self.world.our_defender.y
                 self.send_correct_strafe(-distance)
+        return self
+
+def BouncePass(BaseStrategy):
+    def __init__(self, world, comms_manager):
+        super(BouncePass, self).__init__(world, comms_manager)
+        self.state = "aligning"
+        self.time = None
+        self.turning= None
+
+    def __repr__(self):
+        return "Bounce Pass"
+
+    def execute(self):
+
+
+        if self.world.our_defender.caught_area.isInside(self.world.ball.x, self.world.ball.y):
+            if self.state == "kicking":
+                self.comms_manager.kick()
+                self.state = "passed"
+                self.time = time.clock()
+                return self
+
+        if self.state == "passed":
+            if self.time + 0.5 < time.clock():
+                return Intercept(self.world, self.comms_manager)
+            else:
+                return self
+
+        if not self.world.our_defender.has_ball(self.world.ball):
+            return GoToBall(self.world, self.comms_manager)
+
+
+        if self.state== "aligning":
+            centre= centre_of_zone(self.world.our_defender)
+            attacker_centre= centre_of_zone(self.world.our_attacker)
+            angle= self.world.our_defender.get_rotation_to_point(attacker_centre)
+            disp = self.world.our_defender.get_displacement_to_point(centre)
+            if(disp)<= DISTANCE_THRESHOLD:
+                self.world.comms_manager.stop()
+                self.state= "aiming"
+            elif abs(angle) >TURNING_THRESHOLD:
+                self.send_correct_turn(angle)
+                self.turning= time.clock()
+            else:
+                speed= self.calculate_speed(disp)
+                self.comms_manager.move_forward(speed)
+
+        # If the robot has a clear pass at the top of the pitch pass
+        # If not then turn 90 and pass
+        if self.state== "aiming":
+            x= centre_of_zone(self.world.their_attacker)
+            angle= 45
+            if not is_shot_blocked(self.world, angle):
+                print angle
+                if abs(angle) > AIMING_THRESHOLD:
+                    self.send_correct_turn(angle)
+                    self.turning = time.clock()
+                elif not self.turning:
+                    self.comms_manager.stop()
+                    self.comms_manager.open_grabber()
+                    self.world.our_defender.catcher = "open"
+                    self.state = "kicking"
+
+            else:
+                angle= -45
+                print angle
+                if abs(angle) > AIMING_THRESHOLD:
+                    self.send_correct_turn(angle)
+                    self.turning = time.clock()
+                elif not self.turning:
+                    self.comms_manager.stop()
+                    self.comms_manager.open_grabber()
+                    self.world.our_defender.catcher = "open"
+                    self.state = "kicking"
+
         return self
