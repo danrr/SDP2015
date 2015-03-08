@@ -55,3 +55,16 @@ def is_wall_in_front(world):
     outside_area = int(outside_polygon.area())
 
     return outside_area != 0
+def centre_of_zone(robot):
+    """
+    Given a robot calculate the centre of it's zone
+    """
+    zone_index = robot.zone
+    zone_poly = self.world.pitch.zones[zone_index][0]
+
+    min_x = int(min(zone_poly, key=lambda z: z[0])[0])
+    max_x = int(max(zone_poly, key=lambda z: z[0])[0])
+
+    x = min_x + (max_x - min_x) / 2
+    y =  self.world.pitch.height / 2
+    return (x, y)
