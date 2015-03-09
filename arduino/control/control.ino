@@ -381,14 +381,17 @@ void setRotationalSpeed(int target) {
   if (turnPower > 10) {
     motorBackward(_LEFT_DRIVE, turnPower);
     motorBackward(_RIGHT_DRIVE, turnPower);
+    motorBackward(_BACK_DRIVE, turnPower);
   }
   else if (turnPower < -10) {
     motorForward(_LEFT_DRIVE, -turnPower);
     motorForward(_RIGHT_DRIVE, -turnPower);
+    motorForward(_BACK_DRIVE, -turnPower);
   }
   else {
     motorStop(_LEFT_DRIVE);
     motorStop(_RIGHT_DRIVE);
+    motorStop(_BACK_DRIVE);
   }
 }
 
@@ -399,7 +402,7 @@ void turnLeft(byte tolerance) {
     headingDiff = 360 + headingDiff;
   }
   if (headingDiff < tolerance) {
-    // Place the motors in braking mode. (This is risky as f**k.)
+    // Place the motors in braking mode.
     motorBrake(_LEFT_DRIVE);
     motorBrake(_RIGHT_DRIVE);
     motorBrake(_BACK_DRIVE);
@@ -423,7 +426,7 @@ void turnRight(byte tolerance) {
     headingDiff = 360 + headingDiff;
   }
   if (headingDiff < tolerance) {
-     // Place the motors in braking mode. (This is risky as f**k.)
+     // Place the motors in braking mode.
     motorBrake(_LEFT_DRIVE);
     motorBrake(_RIGHT_DRIVE);
     motorBrake(_BACK_DRIVE);
