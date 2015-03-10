@@ -60,7 +60,7 @@
 * run `git remote prune origin` to stop tracking branches that are no longer on origin
 
 
-####Vision
+###Vision
 
  * Open terminal and run ./camera_setup.sh.x 
    * This resets the hardware settings for the video feed, manual controller for this underway
@@ -109,3 +109,10 @@
      * Set US,UV to max value. LH to 0
      * Vary UH around 10. Vary LS and LV to get rid of noise
      
+###Money
+* Holonomic wheels: £11 * 3
+* Compass: £19.99
+* Extra motors: £1.50 * 3
+* Servo: £12
+* PCB: £??
+* TOTAL: £69.49
