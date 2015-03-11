@@ -381,12 +381,12 @@ void setRotationalSpeed(int target) {
   if (turnPower > 10) {
     motorBackward(_LEFT_DRIVE, turnPower);
     motorBackward(_RIGHT_DRIVE, turnPower);
-    motorBackward(_BACK_DRIVE, turnPower);
+    motorBackward(_BACK_DRIVE, 10);
   }
   else if (turnPower < -10) {
     motorForward(_LEFT_DRIVE, -turnPower);
     motorForward(_RIGHT_DRIVE, -turnPower);
-    motorForward(_BACK_DRIVE, -turnPower);
+    motorForward(_BACK_DRIVE, 10);
   }
   else {
     motorStop(_LEFT_DRIVE);
@@ -669,9 +669,9 @@ int getCurrentHeading() {
 }
 
 byte getTurnSpeed(int headingDiff) {
-  int turnSpeed = headingDiff;
-  if (turnSpeed < 50) {
-    turnSpeed = 50;
+  int turnSpeed = abs(headingDiff);
+  if (turnSpeed < 20) {
+    turnSpeed = 20;
   }
   else if (turnSpeed > 200) {
     turnSpeed = 200;
