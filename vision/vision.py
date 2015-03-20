@@ -268,7 +268,7 @@ class Camera(object):
                 self.frameNo += 1
         else:
             status, frame = self.capture.read()
-        #frame = self.fix_radial_distortion(frame)
+        frame = self.fix_radial_distortion(frame)
         if status:
             return frame[
                 self.crop_values[2]:self.crop_values[3],
