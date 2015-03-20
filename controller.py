@@ -20,7 +20,7 @@ class Controller:
     Primary source of robot control. Ties vision and planning together.
     """
 
-    def __init__(self, pitch, color, our_side, video_port=0, comm_port='/dev/ttyACM0', comms=1):
+    def __init__(self, pitch, color, our_side, video_port=0, comm_port='/dev/ttyACM0', comms=1, penalty=False, role="defender"):
         """
         Entry point for the SDP system.
 
@@ -71,12 +71,12 @@ class Controller:
         self.comms_manager = CommunicationsManager(self.arduino)
 
         # Set up initial strategy
-        world = World(our_side=our_side, pitch_num=self.pitch)
+        world = World(our_side=our_side, pitch_num=self.pitch, role=role)
         cm_to_px = 3.7
         width = 18 * cm_to_px
         height = 9 * cm_to_px
         front_offset = 4 * cm_to_px
-        world.our_defender.catcher_area = {'width': width,
+        world.our_robot.catcher_area = {'width': width,
                                            'height': height,
                                            'front_offset': front_offset,
                                            'cm_to_px': cm_to_px}
@@ -133,8 +133,8 @@ class Controller:
 
                 # Information about the grabbers from the world
                 grabbers = {
-                    'our_defender': self.strategy.world.our_defender.catcher_area,
-                    'our_defender_caught': self.strategy.world.our_defender.caught_area,
+                    'our_defender': self.strategy.world.our_robot.catcher_area,
+                    'our_defender_caught': self.strategy.world.our_robot.caught_area,
                 }
 
                 # Information about states
@@ -239,12 +239,16 @@ if __name__ == '__main__':
     # store_true translates -n or --nocomms to True value for comms argument
     parser.add_argument(
         "-n", "--nocomms", help="Disables sending commands to the robot.", action="store_true")
+    parser.add_argument(
+         "--penalty", help="Triggers penalty mode.", action="store_true")
+    parser.add_argument(
+         "--role", help="Defines the role. Useful for penalty attacker strategy.")
 
     args = parser.parse_args()
     # Based on nocomms value ( -n / --nocomms) turns off or on the communications for arduino
     if args.nocomms:
         c = Controller(
-            pitch=int(args.pitch), color=args.color, our_side=args.side, comms=0).wow()
+            pitch=int(args.pitch), color=args.color, our_side=args.side, comms=0, penalty=args.penalty, role=args.role).wow()
     else:
         c = Controller(
-            pitch=int(args.pitch), color=args.color, our_side=args.side).wow()
+            pitch=int(args.pitch), color=args.color, our_side=args.side, penalty=args.penalty, role=args.role).wow()

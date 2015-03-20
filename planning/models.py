@@ -416,7 +416,7 @@ class World(object):
     This class describes the environment
     """
 
-    def __init__(self, our_side, pitch_num):
+    def __init__(self, our_side, pitch_num, role="defender"):
         assert our_side in ['left', 'right']
         self._pitch = Pitch(pitch_num)
         self._our_side = our_side
@@ -431,6 +431,11 @@ class World(object):
         self._goals = []
         self._goals.append(Goal(0, 0, self._pitch.height / 2.0, 0))
         self._goals.append(Goal(3, self._pitch.width, self._pitch.height / 2.0, pi))
+        self._role = role
+
+    @property
+    def our_robot(self):
+        return self.our_attacker if self._role == 'attacker' else self.our_defender
 
     @property
     def our_attacker(self):

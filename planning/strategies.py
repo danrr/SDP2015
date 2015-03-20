@@ -43,7 +43,7 @@ class BaseStrategy(object):
             self.comms_manager.turn_right(abs(angle))
 
     def in_our_half(self):
-        return (self.world.pitch.zones[self.world.our_defender.zone].isInside(self.world.ball.x,
+        return (self.world.pitch.zones[self.world.our_robot.zone].isInside(self.world.ball.x,
                                                                               self.world.ball.y)
                 or self.world.pitch.zones[self.world.their_attacker.zone].isInside(self.world.ball.x,
                                                                                    self.world.ball.y))
@@ -64,15 +64,15 @@ class BaseStrategy(object):
         return y
 
     def send_correct_catch(self):
-        can_catch = self.world.our_defender.can_catch_ball(self.world.ball)
-        if can_catch and self.world.our_defender.catcher == "open":
+        can_catch = self.world.our_robot.can_catch_ball(self.world.ball)
+        if can_catch and self.world.our_robot.catcher == "open":
             if can_catch == "both":
                 self.comms_manager.close_grabber_center()
             elif can_catch == "right":
                 self.comms_manager.close_grabber_right()
             elif can_catch == "left":
                 self.comms_manager.close_grabber_left()
-            self.world.our_defender.catcher = "closed"
+            self.world.our_robot.catcher = "closed"
             return True
         return False
 
@@ -99,8 +99,8 @@ class Init(BaseStrategy):
 
     def execute(self):
         self.comms_manager.close_grabber_center()
-        if self.world.pitch.zones[self.world.our_defender.zone].isInside(self.world.ball.x, self.world.ball.y):
-            if self.world.our_defender.has_ball:
+        if self.world.pitch.zones[self.world.our_robot.zone].isInside(self.world.ball.x, self.world.ball.y):
+            if self.world.our_robot.has_ball:
                 return BouncePass(self.world, self.comms_manager)
             else:
                 return GoToBall(self.world, self.comms_manager)
@@ -117,18 +117,18 @@ class GoToBall(BaseStrategy):
         return "Go To Ball"
 
     def execute(self):
-        if not self.world.pitch.zones[self.world.our_defender.zone].isInside(self.world.ball.x, self.world.ball.y):
+        if not self.world.pitch.zones[self.world.our_robot.zone].isInside(self.world.ball.x, self.world.ball.y):
             return Intercept(self.world, self.comms_manager)
 
-        if self.world.our_defender.has_ball(self.world.ball):
+        if self.world.our_robot.has_ball(self.world.ball):
             return BouncePass(self.world, self.comms_manager)
 
-        if self.world.our_defender.catcher == "closed":
+        if self.world.our_robot.catcher == "closed":
             # move back if the ball is in the catcher area
-            if self.world.our_defender.can_catch_ball(self.world.ball):
+            if self.world.our_robot.can_catch_ball(self.world.ball):
                 self.comms_manager.move_backward(40)
             else:
-                self.world.our_defender.catcher = "open"
+                self.world.our_robot.catcher = "open"
                 self.comms_manager.open_grabber()
             return self
 
@@ -138,11 +138,11 @@ class GoToBall(BaseStrategy):
         if self.send_correct_catch():
             return BouncePass(self.world, self.comms_manager)
 
-        angle = self.world.our_defender.get_rotation_to_point(self.world.ball.x, self.world.ball.y)
+        angle = self.world.our_robot.get_rotation_to_point(self.world.ball.x, self.world.ball.y)
         if abs(angle) > TURNING_THRESHOLD:
             self.send_correct_turn(angle)
         else:
-            distance_to_ball = self.world.our_defender.get_displacement_to_point(self.world.ball.x, self.world.ball.y)
+            distance_to_ball = self.world.our_robot.get_displacement_to_point(self.world.ball.x, self.world.ball.y)
             speed = self.calculate_speed(distance_to_ball)
             if distance_to_ball > DISTANCE_THRESHOLD:
                 self.comms_manager.move_forward(speed)
@@ -162,7 +162,7 @@ class Intercept(BaseStrategy):
         return "Intercept"
 
     def execute(self):
-        if self.world.pitch.zones[self.world.our_defender.zone].isInside(self.world.ball.x, self.world.ball.y) and \
+        if self.world.pitch.zones[self.world.our_robot.zone].isInside(self.world.ball.x, self.world.ball.y) and \
                 self.world.ball.velocity < BALL_VELOCITY:
             # ball is in our zone, and it's moving slowly, go and catch
             return GoToBall(self.world, self.comms_manager)
@@ -171,18 +171,18 @@ class Intercept(BaseStrategy):
         if self.send_correct_catch():
             return BouncePass(self.world, self.comms_manager)
 
-        if self.world.our_defender.has_ball(self.world.ball):
+        if self.world.our_robot.has_ball(self.world.ball):
             return BouncePass(self.world, self.comms_manager)
 
         # turn to face enemy attacker
-        angle = self.world.our_defender.get_rotation_to_point(self.world.pitch.width / 2, self.world.our_defender.y)
+        angle = self.world.our_robot.get_rotation_to_point(self.world.pitch.width / 2, self.world.our_robot.y)
         angle_threshold = STRAFING_THRESHOLD if self.state == "strafing" else TURNING_THRESHOLD
         if abs(angle) > angle_threshold:
             self.state = "turning"
             self.send_correct_turn(angle)
         else:
             # TODO: move away from edges, self.state = "aligning", add collision detection, use goal_front_x
-            disp = self.world.our_defender.get_displacement_to_point(self.goal_line, self.world.our_defender.y)
+            disp = self.world.our_robot.get_displacement_to_point(self.goal_line, self.world.our_robot.y)
             if disp > DISTANCE_THRESHOLD:
                 speed = self.calculate_speed(disp)
                 if disp < 0:
@@ -194,28 +194,28 @@ class Intercept(BaseStrategy):
             # if the ball is moving fast move to intercept
             if self.world.ball.velocity > BALL_VELOCITY:
                 predicted_y = predict_y_intersection(self.world,
-                                                     self.world.our_defender.x,
+                                                     self.world.our_robot.x,
                                                      self.world.ball,
                                                      bounce=True)
-                if predicted_y and self.world.our_defender.catcher == "closed" and self.in_our_half():
+                if predicted_y and self.world.our_robot.catcher == "closed" and self.in_our_half():
                     self.comms_manager.open_grabber()
-                    self.world.our_defender.catcher = "open"
+                    self.world.our_robot.catcher = "open"
 
             # if the ball is moving slowly or not at all, attempt to
             if self.world.ball.velocity <= BALL_VELOCITY or predicted_y is None:
                 predicted_y = predict_y_intersection(self.world,
-                                                     self.world.our_defender.x,
+                                                     self.world.our_robot.x,
                                                      self.world.their_attacker,
                                                      bounce=True)
 
-                if self.world.our_defender.catcher == "open":
+                if self.world.our_robot.catcher == "open":
                     self.comms_manager.close_grabber_center()
-                    self.world.our_defender.catcher = "closed"
+                    self.world.our_robot.catcher = "closed"
 
             if not predicted_y:
                 predicted_y = self.get_bounded_ball_y()
 
-            distance_to_move = self.world.our_defender.y - predicted_y
+            distance_to_move = self.world.our_robot.y - predicted_y
 
             if self.send_correct_strafe(distance_to_move):
                 self.state = "strafing"
@@ -244,7 +244,7 @@ class AimAndPass(BaseStrategy):
 
     def execute(self):
 
-        if self.world.our_defender.caught_area.isInside(self.world.ball.x, self.world.ball.y):
+        if self.world.our_robot.caught_area.isInside(self.world.ball.x, self.world.ball.y):
             if self.state == "kicking":
                 self.comms_manager.kick()
                 self.state = "passed"
@@ -257,10 +257,10 @@ class AimAndPass(BaseStrategy):
             else:
                 return self
 
-        if not self.world.our_defender.has_ball(self.world.ball):
+        if not self.world.our_robot.has_ball(self.world.ball):
             return GoToBall(self.world, self.comms_manager)
 
-        angle = self.world.our_defender.get_rotation_to_point(self.world.our_attacker.x,
+        angle = self.world.our_robot.get_rotation_to_point(self.world.our_attacker.x,
                                                               self.world.our_attacker.y)
 
         # If the robot has a clear pass after turning by angle then pass
@@ -271,27 +271,26 @@ class AimAndPass(BaseStrategy):
             else:
                 self.comms_manager.stop()
                 self.comms_manager.open_grabber()
-                self.world.our_defender.catcher = "open"
+                self.world.our_robot.catcher = "open"
                 self.state = "kicking"
         else:
             # Align before strafing
-            angle_to_align = self.world.our_defender.get_rotation_to_point(self.world._pitch.width / 2,
-                                                                           self.world.our_defender.y)
+            angle_to_align = self.world.our_robot.get_rotation_to_point(self.world._pitch.width / 2,
+                                                                           self.world.our_robot.y)
             if abs(angle_to_align) > TURNING_THRESHOLD:
                 self.send_correct_turn(angle_to_align)
             else:
                 if self.world.their_attacker.y < self.world.pitch.height / 3:
-                    distance = 8 * self.world.pitch.height / 9 - self.world.our_defender.y
+                    distance = 8 * self.world.pitch.height / 9 - self.world.our_robot.y
                 elif self.world.their_attacker.y > 2 * self.world.pitch.height / 3:
-                    distance = self.world.pitch.height / 9 - self.world.our_defender.y
+                    distance = self.world.pitch.height / 9 - self.world.our_robot.y
                 elif self.world.our_attacker.y > 2 * self.world.pitch.height / 3 or \
                                 self.world.our_attacker.y < 1 * self.world.pitch.height / 3:
-                    distance = self.world.our_attacker.y - self.world.our_defender.y
+                    distance = self.world.our_attacker.y - self.world.our_robot.y
                 else:
-                    distance = self.world.pitch.height / 9 - self.world.our_defender.y
+                    distance = self.world.pitch.height / 9 - self.world.our_robot.y
                 self.send_correct_strafe(-distance)
         return self
-
 
 class BouncePass(BaseStrategy):
     def __init__(self, world, comms_manager):
@@ -303,7 +302,7 @@ class BouncePass(BaseStrategy):
         return "Bounce Pass"
 
     def execute(self):
-        if self.world.our_defender.caught_area.isInside(self.world.ball.x, self.world.ball.y):
+        if self.world.our_robot.caught_area.isInside(self.world.ball.x, self.world.ball.y):
             if self.state == "kicking":
                 self.comms_manager.kick()
                 self.state = "passed"
@@ -316,13 +315,13 @@ class BouncePass(BaseStrategy):
             else:
                 return self
 
-        if not self.world.our_defender.has_ball(self.world.ball):
+        if not self.world.our_robot.has_ball(self.world.ball):
             return GoToBall(self.world, self.comms_manager)
 
         if self.state == "aligning":
-            centre = centre_of_zone(self.world, self.world.our_defender)
-            angle = self.world.our_defender.get_rotation_to_point(*centre)
-            disp = self.world.our_defender.get_displacement_to_point(*centre)
+            centre = centre_of_zone(self.world, self.world.our_robot)
+            angle = self.world.our_robot.get_rotation_to_point(*centre)
+            disp = self.world.our_robot.get_displacement_to_point(*centre)
 
             if disp > DISTANCE_THRESHOLD:
                 if abs(angle) > AIMING_THRESHOLD:
@@ -338,11 +337,11 @@ class BouncePass(BaseStrategy):
         # If not then turn 90 and pass
         if self.state == "aiming":
             if self.world.their_attacker.y > self.world.pitch.height / 2:
-                angle = self.world.our_defender.get_rotation_to_point(
+                angle = self.world.our_robot.get_rotation_to_point(
                     centre_of_zone(self.world, self.world.their_attacker)[0], 30
                 )
             else:
-                angle = self.world.our_defender.get_rotation_to_point(
+                angle = self.world.our_robot.get_rotation_to_point(
                     centre_of_zone(self.world, self.world.their_attacker)[0], self.world.pitch.height - 30
                 )
 
@@ -351,7 +350,7 @@ class BouncePass(BaseStrategy):
             else:
                 self.comms_manager.stop()
                 self.comms_manager.open_grabber()
-                self.world.our_defender.catcher = "open"
+                self.world.our_robot.catcher = "open"
                 self.state = "kicking"
 
         return self
