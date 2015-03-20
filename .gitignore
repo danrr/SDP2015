@@ -47,6 +47,9 @@ calibrations_user.json
 # Croppings
 croppings.json
 
+# Images inside the img folder
+*.jpg
+
 
 # Temporary files
 *~
