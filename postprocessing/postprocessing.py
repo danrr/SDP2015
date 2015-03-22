@@ -40,7 +40,8 @@ class Postprocessing(object):
             self._vectors['ball']['time'] = self._time
             return Vector(int(info['x']), int(info['y']), angle, velocity)
         else:
-            return deepcopy(self._vectors['ball']['vec'])
+            return Vector(0, 0, 0, 0)
+            #return deepcopy(self._vectors['ball']['vec'])
 
     def analyze_robot(self, key, info):
         '''
