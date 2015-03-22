@@ -322,6 +322,12 @@ class BouncePass(BaseStrategy):
         if self.state == "aligning":
             centre = centre_of_zone(self.world, self.world.our_defender)
             angle = self.world.our_defender.get_rotation_to_point(*centre)
+
+            if angle > 0:
+                angle = angle - pi
+            else:
+                angle = angle + pi
+
             disp = self.world.our_defender.get_displacement_to_point(*centre)
 
             if disp > DISTANCE_THRESHOLD:
@@ -329,7 +335,7 @@ class BouncePass(BaseStrategy):
                     self.send_correct_turn(angle)
                 else:
                     speed = self.calculate_speed(disp)
-                    self.comms_manager.move_forward(speed)
+                    self.comms_manager.move_backward(speed)
             else:
                 self.comms_manager.stop()
                 self.state = "aiming"
