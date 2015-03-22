@@ -133,8 +133,9 @@ class Controller:
 
                 # Information about the grabbers from the world
                 grabbers = {
-                    'our_defender': self.strategy.world.our_defender.catcher_area,
-                    'our_defender_caught': self.strategy.world.our_defender.caught_area,
+                    'red': self.strategy.world.our_defender.catcher_area,
+                    'orange': self.strategy.world.our_defender.caught_area,
+                    'black': self.strategy.world.our_defender.area_behind_catcher,
                 }
 
                 # Information about states

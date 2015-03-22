@@ -257,6 +257,17 @@ class Robot(PitchObject):
         caught_area.rotate(self.angle, self.x, self.y)
         return caught_area
 
+    @property
+    def area_behind_catcher(self):
+        cm_to_px = self._catcher_area['cm_to_px']
+        point1 = (self.x + self._catcher_area['front_offset'] - 1, self.y + (9.8 * cm_to_px))
+        point2 = (self.x + self._catcher_area['front_offset'] - (6 * cm_to_px), self.y + (9.8 * cm_to_px))
+        point3 = (self.x + self._catcher_area['front_offset'] - (6 * cm_to_px), self.y - (9.8 * cm_to_px))
+        point4 = (self.x + self._catcher_area['front_offset'] - 1, self.y - (9.8 * cm_to_px))
+        area = Polygon((point1, point2, point3, point4))
+        area.rotate(self.angle, self.x, self.y)
+        return area
+
     @catcher.setter
     def catcher(self, new_position):
         assert new_position in ['open', 'closed']
@@ -284,14 +295,7 @@ class Robot(PitchObject):
             return None
 
     def ball_behind_catcher(self, ball):
-        cm_to_px = self._catcher_area['cm_to_px']
-        point1 = (self.x + self._catcher_area['front_offset'] - 1, self.y + (9.8 * cm_to_px))
-        point2 = (self.x + self._catcher_area['front_offset'] - (6 * cm_to_px), self.y + (9.8 * cm_to_px))
-        point3 = (self.x + self._catcher_area['front_offset'] - (6 * cm_to_px), self.y - (9.8 * cm_to_px))
-        point4 = (self.x + self._catcher_area['front_offset'] - 1, self.y - (9.8 * cm_to_px))
-        area = Polygon((point1, point2, point3, point4))
-        area.rotate(self.angle, self.x, self.y)
-
+        area = self.area_behind_catcher
         if area.isInside(ball.x, ball.y):
             return True
         return False

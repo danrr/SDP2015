@@ -423,10 +423,6 @@ class GUI(object):
         if grabbers:
             self.draw_grabbers(frame, grabbers, frame_height)
 
-        #TODO uncomment
-        #if grabbers:
-        #    self.draw_grabbers(frame, grabbers, frame_height)
-
         # Extend image downwards and draw states.
         blank = np.zeros_like(frame)[:200, :, :]
         frame_with_blank = np.vstack((frame, blank))
@@ -537,17 +533,10 @@ class GUI(object):
                 frame, text, (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX, size, color, thickness)
 
     def draw_grabbers(self, frame, grabbers, height):
-        def_grabber = grabbers['our_defender'][0]
-        def_grabber_caught = grabbers['our_defender_caught'][0]
-
-        def_grabber = [(x, height - y) for x, y in def_grabber]
-        def_grabber_caught = [(x, height - y) for x, y in def_grabber_caught]
-
-        def_grabber = [(int(x) if x > -1 else 0, int(y) if y > -1 else 0) for x, y in def_grabber]
-        def_grabber_caught = [(int(x) if x > -1 else 0, int(y) if y > -1 else 0) for x, y in def_grabber_caught]
-
-        cv2.polylines(frame, [np.array(def_grabber)], True, BGR_COMMON['red'], 1)
-        cv2.polylines(frame, [np.array(def_grabber_caught)], True, BGR_COMMON['orange'], 1)
+        for colour, [area] in grabbers.items():
+            area = [(x, height - y) for x, y in area]
+            area = [(int(x) if x > -1 else 0, int(y) if y > -1 else 0) for x, y in area]
+            cv2.polylines(frame, [np.array(area)], True, BGR_COMMON[colour], 1)
 
     def draw_velocity(self, frame, frame_offset, x, y, angle, vel, scale=10):
         if not(None in [frame, x, y, angle, vel]) and vel is not 0:

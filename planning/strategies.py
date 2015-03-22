@@ -25,7 +25,7 @@ class BaseStrategy(object):
     def send_correct_strafe(self, distance):
         if abs(distance) < DISTANCE_THRESHOLD:
             return False
-        speed = self.calculate_speed(distance)
+        speed = self.calculate_speed(distance) * 1.5
 
         if distance < 0 and self.world._our_side == "left" \
                 or distance > 0 and self.world._our_side == "right":
@@ -127,10 +127,14 @@ class GoToBall(BaseStrategy):
             # move back if the ball is in the catcher area
             if self.world.our_defender.can_catch_ball(self.world.ball):
                 self.comms_manager.move_backward(40)
-            else:
+                return self
+            elif not self.world.our_defender.ball_behind_catcher(self.world.ball):
                 self.world.our_defender.catcher = "open"
                 self.comms_manager.open_grabber()
-            return self
+        else:
+            if self.world.our_defender.ball_behind_catcher(self.world.ball):
+                self.world.our_defender.catcher = "closed"
+                self.comms_manager.close_grabber_center()
 
         # if self.move_away_from_wall():
         #     return self
