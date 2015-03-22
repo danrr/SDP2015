@@ -488,14 +488,16 @@ class World(object):
 
         # Checking if the position of the ball makes sense
         if self.ball.x == 0 and self.ball.y == 0:
-            print("LOST BALL")
+            # print("LOST BALL")
             if self.our_attacker.get_displacement_to_point(self.old_ball.x, self.old_ball.y) <= 20:
                 self.ball.vector = pos_dict['our_attacker']
             elif self.their_attacker.get_displacement_to_point(self.old_ball.x, self.old_ball.y) <= 20:
                 self.ball.vector = pos_dict['their_attacker']
             elif self.our_defender.get_displacement_to_point(self.old_ball.x, self.old_ball.y) <= 20:
                 if self.our_defender.has_ball(self.old_ball):
-                    self.ball.vector = pos_dict['our_defender']
+                    behind = -10 if self.our_side == 'right' else 10
+                    vector = pos_dict['our_defender']
+                    self.ball.vector = Vector(vector.x + behind, vector.y, vector.angle, vector.velocity)
                 else:
                     behind = 10 if self.our_side == 'right' else -10
                     vector = pos_dict['our_defender']
