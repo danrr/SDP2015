@@ -66,7 +66,9 @@ class BaseStrategy(object):
     def send_correct_catch(self):
         can_catch = self.world.our_defender.can_catch_ball(self.world.ball)
         if can_catch and self.world.our_defender.catcher == "open":
-            if can_catch == "both":
+            if (can_catch!= None) and (self.world.ball.velocity>5):
+                self.comms_manager.close_grabber_center()
+            elif can_catch == "both":
                 self.comms_manager.close_grabber_center()
             elif can_catch == "right":
                 self.comms_manager.close_grabber_right()
