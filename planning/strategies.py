@@ -1,4 +1,4 @@
-from math import pi, log
+from math import pi, log, copysign
 from planning.utilities import predict_y_intersection, is_shot_blocked, is_wall_in_front, centre_of_zone
 import time
 
@@ -107,6 +107,29 @@ class BaseStrategy(object):
         elif wall == "right":
             self.comms_manager.strafe_left(100)
             return True
+        return False
+
+    def move_to_point(self, centre):
+        angle = self.world.our_defender.get_rotation_to_point(*centre)
+        displacement = self.world.our_defender.get_displacement_to_point(*centre)
+
+        if displacement > DISTANCE_THRESHOLD:
+            coefficient = round(angle / (pi / 2))
+            target_angle = coefficient * (pi/2)
+            angle_to_move = target_angle - angle
+            print coefficient, angle, target_angle, angle_to_move, angle /(pi/2)
+            if abs(angle_to_move) > TURNING_THRESHOLD:
+                self.send_correct_turn(-angle_to_move)
+                return True
+            speed = self.calculate_speed(displacement)
+            if coefficient == 0:
+                self.comms_manager.move_forward(speed)
+            elif abs(coefficient) == 2:
+                self.comms_manager.move_backward(speed)
+            else:
+                print self.send_correct_strafe(copysign(displacement, -coefficient))
+            return True
+        self.comms_manager.stop()
         return False
 
 
@@ -338,21 +361,7 @@ class BouncePass(BaseStrategy):
 
         if self.state == "aligning":
             centre = centre_of_zone(self.world, self.world.our_defender)
-            angle = self.world.our_defender.get_rotation_to_point(*centre)
-
-            if angle > 0:
-                angle = angle - pi
-            else:
-                angle = angle + pi
-
-            disp = self.world.our_defender.get_displacement_to_point(*centre)
-
-            if disp > DISTANCE_THRESHOLD:
-                if not self.send_correct_turn(angle, AIMING_THRESHOLD):
-                    speed = self.calculate_speed(disp)
-                    self.comms_manager.move_backward(speed)
-            else:
-                self.comms_manager.stop()
+            if not self.move_to_point(centre):
                 self.state = "aiming"
                 
         # If the robot has a clear pass at the top of the pitch pass
