@@ -138,8 +138,8 @@ class GoToBall(BaseStrategy):
                 self.world.our_defender.catcher = "closed"
                 self.comms_manager.close_grabber_center()
 
-        # if self.move_away_from_wall():
-        #     return self
+        if self.move_away_from_wall():
+             return self
 
         if self.send_correct_catch():
             return BouncePass(self.world, self.comms_manager)
