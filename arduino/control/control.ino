@@ -5,6 +5,8 @@
 #include <Wire.h>
 #include <Servo.h>
 
+#include <avr/wdt.h>
+
 #include "SDPArduino.h"
 
 #include <Adafruit_Sensor.h>
@@ -89,6 +91,10 @@ void setup() {
   kicker.attach(5, 600, 2400); 
   // initialise the IMU
   initSensors();
+
+  //Initialise the WDT and flush the serial...
+  wdt_enable(WDTO_1S);
+  Serial.flush();
   
   // initialise kick functions as they're constant
   commands[1].functionPtr = &doKick;
@@ -97,6 +103,8 @@ void setup() {
 }
 
 void initSensors()
+
+
 {
   if(!accel.begin())
   {
@@ -122,6 +130,9 @@ void initSensors()
 */
 
 void loop() {
+  // Reset the WDT...
+  wdt_reset();
+
   updateTimings();
   fetchCommand();
   if (cmd) {
@@ -381,12 +392,12 @@ void setRotationalSpeed(int target) {
   if (turnPower > 10) {
     motorBackward(_LEFT_DRIVE, turnPower);
     motorBackward(_RIGHT_DRIVE, turnPower);
-    motorBackward(_BACK_DRIVE, 10);
+    motorStop(_BACK_DRIVE);
   }
   else if (turnPower < -10) {
     motorForward(_LEFT_DRIVE, -turnPower);
     motorForward(_RIGHT_DRIVE, -turnPower);
-    motorForward(_BACK_DRIVE, 10);
+    motorStop(_BACK_DRIVE);
   }
   else {
     motorStop(_LEFT_DRIVE);
@@ -670,8 +681,8 @@ int getCurrentHeading() {
 
 byte getTurnSpeed(int headingDiff) {
   int turnSpeed = abs(headingDiff);
-  if (turnSpeed < 20) {
-    turnSpeed = 20;
+  if (turnSpeed < 50) {
+    turnSpeed = 50;
   }
   else if (turnSpeed > 200) {
     turnSpeed = 200;
