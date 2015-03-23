@@ -108,6 +108,7 @@
      * BL to small value +-8
      * Set US,UV to max value. LH to 0
      * Vary UH around 10. Vary LS and LV to get rid of noise
+     * Alternatively, if the ball sometimes disappears with the above settings, try setting CT to around 70 and set the following settings: http://i.imgur.com/XxpfwbA.jpg This should make the ball appear more reliably.
      
 ###Money
 * Holonomic wheels: £11 * 3
