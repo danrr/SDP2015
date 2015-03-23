@@ -185,11 +185,13 @@ while True:
         else:
             current_command += chr(c)
         draw_status(cmd_window, current_command)
+        draw_data(data_window, data)
     
     # also check if input is available from the serial connection
     while (ser.inWaiting()):
         response = ord(ser.read())
         data.append("-> " + str(response))
         f.write("-> " + str(response) + '\n')
-    draw_data(data_window, data)
+        draw_data(data_window, data)
+
 
