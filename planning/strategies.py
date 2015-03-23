@@ -118,8 +118,7 @@ class BaseStrategy(object):
             target_angle = coefficient * (pi/2)
             angle_to_move = target_angle - angle
             print coefficient, angle, target_angle, angle_to_move, angle /(pi/2)
-            if abs(angle_to_move) > TURNING_THRESHOLD:
-                self.send_correct_turn(-angle_to_move)
+            if self.send_correct_turn(-angle_to_move, TURNING_THRESHOLD):
                 return True
             speed = self.calculate_speed(displacement)
             if coefficient == 0:
