@@ -1,2 +1,0 @@
-high color ~118 
-rest 50%
