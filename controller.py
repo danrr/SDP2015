@@ -81,7 +81,7 @@ class Controller:
                                            'front_offset': front_offset,
                                            'cm_to_px': cm_to_px}
 
-        self.strategy = Init(world, self.comms_manager)
+        self.strategy = Init(world, self.comms_manager, penalty)
 
     # def send_response_to_planner(self):
     #     if self.arduino.serial:
