@@ -19,6 +19,8 @@ byte cmd, data, response;
 Servo kicker;
 unsigned long current_millis;
 
+int rotary_positions[6] = {0, 0, 0, 0, 0, 0};
+
 // For timing purposes
 unsigned long current_micros;
 unsigned long old_micros;
@@ -66,6 +68,7 @@ Command commands[7];
 #define _STRAFE_LEFT 'C'
 #define _STRAFE_RIGHT 'V'
 #define _GET_TIMING 'T'
+#define _GET_ROTARY_POSITION 'R'
 
 #define _LEFT_DRIVE 2
 #define _RIGHT_DRIVE 4
@@ -78,6 +81,8 @@ Command commands[7];
 #define _TURN_DELAY 50
 
 #define _RAD_TO_DEG 57.2957795
+
+#define ROTARY_SLAVE_ADDRESS 5
 
 
 /*
@@ -133,7 +138,10 @@ void loop() {
   // Reset the WDT...
   wdt_reset();
 
+  // Update stuff...
+  updateRotaryPositions();
   updateTimings();
+
   fetchCommand();
   if (cmd) {
     decodeCommand();
@@ -160,7 +168,6 @@ void fetchCommand() {
   if (Serial.available() >= 2) {
     cmd = (char)Serial.read();
     data = (char)Serial.read();
-    response = cmd;
   }
 }
 
@@ -265,10 +272,10 @@ void decodeCommand() {
       commands[4].millis = current_millis;
       commands[4].functionPtr = &startOpenGrabber;
 
-      commands[5].millis = current_millis + 200;
-      commands[5].functionPtr = &slowOpenGrabber;
+      //commands[5].millis = current_millis + 800;
+      //commands[5].functionPtr = &slowOpenGrabber;
 
-      commands[6].millis = current_millis + 400;
+      commands[6].millis = current_millis + 800;
       commands[6].functionPtr = &stopGrabber;
 
       commands[4].data = commands[5].data = commands[6].data = data;
@@ -278,10 +285,10 @@ void decodeCommand() {
       commands[4].millis = current_millis;
       commands[4].functionPtr = &startCloseGrabber;
 
-      commands[5].millis = current_millis + 200;
-      commands[5].functionPtr = &slowCloseGrabber;
+      //commands[5].millis = current_millis + 800;
+      //commands[5].functionPtr = &slowCloseGrabber;
 
-      commands[6].millis = current_millis + 400;
+      commands[6].millis = current_millis + 800;
       commands[6].functionPtr = &stopGrabber;
 
       commands[4].data = commands[5].data = commands[6].data = data;
@@ -298,7 +305,9 @@ void decodeCommand() {
     case _GET_TIMING:
       returnTiming(data);
       break;
-     
+    case _GET_ROTARY_POSITION:
+      returnRotaryPosition(data);
+      break;
    }
 }
 
@@ -417,7 +426,6 @@ void turnLeft(byte tolerance) {
     motorBrake(_LEFT_DRIVE);
     motorBrake(_RIGHT_DRIVE);
     motorBrake(_BACK_DRIVE);
-    response = 0xff;
 
     // schedule the brakes to be released.
     commands[0].millis = millis() + 500;
@@ -441,7 +449,6 @@ void turnRight(byte tolerance) {
     motorBrake(_LEFT_DRIVE);
     motorBrake(_RIGHT_DRIVE);
     motorBrake(_BACK_DRIVE);
-    response = 0xff;
 
     // schedule the brakes to be released.
     commands[0].millis = millis() + 500;
@@ -541,11 +548,11 @@ void startCloseGrabber(byte data) {
     if (data == 1) {
       // Close left grabber first
       motorForward(_LEFT_GRABBER, 100);
-      motorBackward(_RIGHT_GRABBER, 20);
+      motorBackward(_RIGHT_GRABBER, 60);
     } 
     else if (data == 2) {
       // Close right grabber first
-      motorForward(_LEFT_GRABBER, 10);
+      motorForward(_LEFT_GRABBER, 50);
       motorBackward(_RIGHT_GRABBER, 100);
     }
     else {
@@ -572,7 +579,7 @@ void stopGrabber(byte data) {
   motorBrake(_RIGHT_GRABBER);
 
   // schedule the brakes to be released.
-  commands[6].millis = millis() + 500;
+  commands[6].millis = millis() + 100;
   commands[6].functionPtr = &releaseBrakes;
   commands[6].data = 2;
 }
@@ -644,6 +651,27 @@ void returnTiming(byte data) {
   }
   else if (data == 2) {
     response = max_time;
+  }
+}
+
+void returnRotaryPosition(byte data) {
+  if (data >= 0 && data < 6) {
+    /*
+      if response is 0 then it won't get sent.
+      Let's use a bias of 200 so that negative -> <200
+      and positive -> >200.
+    */
+    response = (byte) (200 + rotary_positions[data]);
+  }
+}
+
+void updateRotaryPositions() {
+  // Request motor position deltas from rotary slave board
+  Wire.requestFrom(ROTARY_SLAVE_ADDRESS, 6);
+  
+  // Update the recorded motor positions
+  for (int i = 0; i < 6; i++) {
+    rotary_positions[i] += (int8_t) Wire.read();  // Must cast to signed 8-bit type
   }
 }
 
