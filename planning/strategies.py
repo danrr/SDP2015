@@ -55,9 +55,9 @@ class BaseStrategy(object):
 
         if abs(angle) > threshold:
             angle = int(((angle / pi) * 180))
-            if angle > 0:
+            if angle > 0 and self.world.our_defender.radial_velocity < 0.1:
                 self.comms_manager.turn_left(angle)
-            else:
+            elif self.world.our_defender.radial_velocity > -0.1:
                 self.comms_manager.turn_right(abs(angle))
             return True
         return False
@@ -92,6 +92,12 @@ class BaseStrategy(object):
                 self.comms_manager.close_grabber_right()
             elif can_catch == "left":
                 self.comms_manager.close_grabber_left()
+
+            grabber_pos_left = self.comms_manager.get_grabber_pos_left()
+            grabber_pos_rigth = self.comms_manager.get_grabber_pos_right()
+            if not (grabber_pos_left == 200 and grabber_pos_right == 200):
+                self.comms_manager.close_grabber_center()
+
             self.world.our_defender.catcher = "closed"
             return True
         return False
@@ -117,7 +123,6 @@ class BaseStrategy(object):
             coefficient = round(angle / (pi / 2))
             target_angle = coefficient * (pi/2)
             angle_to_move = target_angle - angle
-            print coefficient, angle, target_angle, angle_to_move, angle /(pi/2)
             if self.send_correct_turn(-angle_to_move, TURNING_THRESHOLD):
                 return True
             speed = self.calculate_speed(displacement)
@@ -126,7 +131,7 @@ class BaseStrategy(object):
             elif abs(coefficient) == 2:
                 self.comms_manager.move_backward(speed)
             else:
-                print self.send_correct_strafe(copysign(displacement, -coefficient))
+                self.send_correct_strafe(copysign(displacement, -coefficient))
             return True
         self.comms_manager.stop()
         return False
@@ -177,10 +182,20 @@ class GoToBall(BaseStrategy):
             elif not self.world.our_defender.ball_behind_catcher(self.world.ball):
                 self.world.our_defender.catcher = "open"
                 self.comms_manager.open_grabber()
+
+                grabber_pos_left = self.comms_manager.get_grabber_pos_left()
+                grabber_pos_rigth = self.comms_manager.get_grabber_pos_right()
+                if not (grabber_pos_left == 211 and grabber_pos_right == 189):
+                    self.comms_manager.open_grabber()
         else:
             if self.world.our_defender.ball_behind_catcher(self.world.ball):
                 self.world.our_defender.catcher = "closed"
                 self.comms_manager.close_grabber_center()
+
+                grabber_pos_left = self.comms_manager.get_grabber_pos_left()
+                grabber_pos_rigth = self.comms_manager.get_grabber_pos_right()
+                if not (grabber_pos_left == 200 and grabber_pos_right == 200):
+                    self.comms_manager.close_grabber_center()
 
         # if self.move_away_from_wall():
         #     return self
@@ -227,10 +242,11 @@ class Intercept(BaseStrategy):
         angle_threshold = STRAFING_THRESHOLD if self.state == "strafing" else TURNING_THRESHOLD
         if self.send_correct_turn(angle, angle_threshold):
             self.state = "turning"
+            return self
         else:
-            # TODO: move away from edges, self.state = "aligning", add collision detection, use goal_front_x
             disp = self.world.our_defender.get_displacement_to_point(self.goal_line, self.world.our_defender.y)
-            if disp > DISTANCE_THRESHOLD:
+            # if at risk of going into other zone
+            if disp > DISTANCE_THRESHOLD * 2:
                 speed = self.calculate_speed(disp)
                 if disp < 0:
                     self.comms_manager.move_forward(speed)
@@ -248,7 +264,12 @@ class Intercept(BaseStrategy):
                     self.comms_manager.open_grabber()
                     self.world.our_defender.catcher = "open"
 
-            # if the ball is moving slowly or not at all, attempt to
+                    grabber_pos_left = self.comms_manager.get_grabber_pos_left()
+                    grabber_pos_rigth = self.comms_manager.get_grabber_pos_right()
+                    if not (grabber_pos_left == 211 and grabber_pos_right == 189):
+                        self.comms_manager.open_grabber()                    
+
+            # if the ball is moving slowly or not at all, attempt to block shots from attacker
             if self.world.ball.velocity <= BALL_VELOCITY or predicted_y is None:
                 predicted_y = predict_y_intersection(self.world,
                                                      self.world.our_defender.x,
@@ -259,6 +280,12 @@ class Intercept(BaseStrategy):
                     self.comms_manager.close_grabber_center()
                     self.world.our_defender.catcher = "closed"
 
+                    grabber_pos_left = self.comms_manager.get_grabber_pos_left()
+                    grabber_pos_rigth = self.comms_manager.get_grabber_pos_right()
+                    if not (grabber_pos_left == 200 and grabber_pos_right == 200):
+                        self.comms_manager.close_grabber_center()
+
+            # if attacker is facing away move to ball y
             if not predicted_y:
                 predicted_y = self.get_bounded_ball_y()
 
@@ -266,9 +293,10 @@ class Intercept(BaseStrategy):
 
             if self.send_correct_strafe(distance_to_move):
                 self.state = "strafing"
+                return self
             else:
-                # TODO: move to be closer to an ideal distance from goal self.state = "aligning", use goal_front_x
-                if abs(disp) > DISTANCE_THRESHOLD * 2:
+                # move to be closer to an ideal distance from goal if we don't need to intercept ball
+                if abs(disp) > DISTANCE_THRESHOLD:
                     speed = self.calculate_speed(disp)
                     if disp < 0:
                         self.comms_manager.move_forward(speed)
@@ -299,7 +327,7 @@ class AimAndPass(BaseStrategy):
                 return self
 
         if self.state == "passed":
-            if self.time + 0.5 < time.clock():
+            if self.time + 1 < time.clock():
                 return Intercept(self.world, self.comms_manager)
             else:
                 return self
@@ -317,6 +345,12 @@ class AimAndPass(BaseStrategy):
                 self.comms_manager.stop()
                 self.comms_manager.open_grabber()
                 self.world.our_defender.catcher = "open"
+
+                grabber_pos_left = self.comms_manager.get_grabber_pos_left()
+                grabber_pos_rigth = self.comms_manager.get_grabber_pos_right()
+                if not (grabber_pos_left == 211 and grabber_pos_right == 189):
+                    self.comms_manager.open_grabber()   
+                             
                 self.state = "kicking"
         else:
             # Align before strafing
@@ -383,6 +417,12 @@ class BouncePass(BaseStrategy):
                 self.comms_manager.stop()
                 self.comms_manager.open_grabber()
                 self.world.our_defender.catcher = "open"
+
+                grabber_pos_left = self.comms_manager.get_grabber_pos_left()
+                grabber_pos_rigth = self.comms_manager.get_grabber_pos_right()
+                if not (grabber_pos_left == 211 and grabber_pos_right == 189):
+                    self.comms_manager.open_grabber()
+                                
                 self.state = "kicking"
 
         return self
