@@ -69,6 +69,7 @@ Command commands[7];
 #define _STRAFE_RIGHT 'V'
 #define _GET_TIMING 'T'
 #define _GET_ROTARY_POSITION 'R'
+#define _GET_BATTERY_VOLTAGE 'B'
 
 #define _LEFT_DRIVE 2
 #define _RIGHT_DRIVE 4
@@ -305,9 +306,13 @@ void decodeCommand() {
     case _GET_TIMING:
       returnTiming(data);
       break;
+
     case _GET_ROTARY_POSITION:
       returnRotaryPosition(data);
       break;
+
+    case _GET_BATTERY_VOLTAGE:
+      returnBatteryVoltage();
    }
 }
 
@@ -663,6 +668,18 @@ void returnRotaryPosition(byte data) {
     */
     response = (byte) (200 + rotary_positions[data]);
   }
+}
+
+void returnBatteryVoltage() {
+  int relativeVoltage = analogRead(2); // Input on A2.
+  float absoluteVoltage = (5.0 * relativeVoltage) / 1023.0;
+  /*
+    Need to multiply by 2*10 since the potential divider on the board
+    divided the voltage by 2, and we want a larger precision number.
+    I.e. voltage will go from 0-100.  
+  */
+  char responseVoltage = absoluteVoltage * 20;
+  response = responseVoltage;
 }
 
 void updateRotaryPositions() {

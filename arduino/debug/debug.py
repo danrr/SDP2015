@@ -105,6 +105,10 @@ def parse_command(command):
         elif (command.startswith("get heading")):
             cmd = ord("U")
             description = "Get Heading"
+        elif (command.startswith("get timing")):
+            cmd = ord("T")
+            description = "Get Timing" 
+            value = int(command.replace("get timing", ""))      
         elif (command.startswith("strafe left")):
             cmd = ord("C")
             value = int(command.replace("strafe left", ""))
@@ -112,7 +116,14 @@ def parse_command(command):
         elif (command.startswith("strafe right")):
             cmd = ord("V")
             value = int(command.replace("strafe right", ""))
-            description = "Strafe Right " + str(value)               
+            description = "Strafe Right " + str(value)
+        elif (command.startswith("get rotary")):
+            cmd = ord("R")
+            value = int(command.replace("get rotary", ""))
+            description = "Get Rotary " + str(value)      
+        elif (command.startswith("get battery")):
+            cmd = ord("B")
+            description = "Get Battery"             
     except:
         cmd == 0
 
@@ -171,6 +182,7 @@ while True:
             if (current_command != ""):
                 command = parse_command(current_command)
                 data.append(hex(command[0]) + " " + hex(command[1]) + " (" + command[2] + ")")
+
                 try:
                     ser.write(chr(command[0]))
                     ser.write(chr(command[1]))
@@ -185,13 +197,11 @@ while True:
         else:
             current_command += chr(c)
         draw_status(cmd_window, current_command)
-        draw_data(data_window, data)
     
     # also check if input is available from the serial connection
     while (ser.inWaiting()):
         response = ord(ser.read())
         data.append("-> " + str(response))
         f.write("-> " + str(response) + '\n')
-        draw_data(data_window, data)
-
+    draw_data(data_window, data)
 
