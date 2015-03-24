@@ -53,8 +53,10 @@ def is_wall_in_front(world):
     zone = world.pitch.zones[world.our_defender.zone]
     x= centre_of_zone(world,world.our_defender)[0]
     y= centre_of_zone(world,world.our_defender)[1]
-    
 
+    #Extended area allows us to grab ball when it's on the line between zones
+
+    # If we're on the left x values should be added
     if world.our_defender.zone == 0 or world.our_defender.zone== 2:
         top_edge= ((x+ world.pitch.width/2), y+ world.pitch.height/2)
         top_extended_point=  ((x+ (cm_to_px* grabber_length) + world.pitch.width/2), y+ world.pitch.height/2)
@@ -62,7 +64,8 @@ def is_wall_in_front(world):
         bottom_edge= ((x + world.pitch.width/2), y- world.pitch.height/ 2)
         extraArea= Polygon((top_edge, top_extended_point, bottom_extended_point, bottom_edge))
         extendedZone= zone | extraArea
-
+        
+    # otherwise x values should be subtracted
     else:
         top_edge= ((x- world.pitch.width/2), y+ world.pitch.height/2)
         top_extended_point=  ((x- (cm_to_px* grabber_length) - world.pitch.width/2), y+ world.pitch.height/2)
@@ -70,6 +73,7 @@ def is_wall_in_front(world):
         bottom_edge= ((x - world.pitch.width/2), y- world.pitch.height/ 2)
         extraArea= Polygon((top_edge, top_extended_point, bottom_extended_point, bottom_edge))
         extendedZone= zone | extraArea
+
 
     grabber_area_left = robot.catcher_area_left
     outside_polygon_left= (extendedZone| grabber_area_left) - zone
