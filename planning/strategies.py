@@ -124,8 +124,10 @@ class BaseStrategy(object):
                 self.comms_manager.move_forward(speed)
             elif abs(coefficient) == 2:
                 self.comms_manager.move_backward(speed)
+            elif coefficient == 1:
+                self.comms_manager.strafe_left(speed)
             else:
-                self.send_correct_strafe(copysign(displacement, -coefficient))
+                self.comms_manager.strafe_right(speed)
             return True
         self.comms_manager.stop()
         return False
