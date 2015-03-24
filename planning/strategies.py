@@ -8,7 +8,7 @@ DISTANCE_THRESHOLD = 15
 AIMING_THRESHOLD = pi / 27
 STRAFING_THRESHOLD = pi / 5
 TURNING_THRESHOLD = pi / 10
-FULL_TURN_THRESHOLD = pi - pi / 36
+FULL_TURN_THRESHOLD = pi - pi / 60
 
 
 class BaseStrategy(object):
@@ -27,7 +27,7 @@ class BaseStrategy(object):
     def send_correct_strafe(self, distance):
         if abs(distance) < DISTANCE_THRESHOLD:
             return False
-        speed = self.calculate_speed(distance) * 1.5
+        speed = self.calculate_speed(distance)
 
         if distance < 0 and self.world._our_side == "left" \
                 or distance > 0 and self.world._our_side == "right":
@@ -57,9 +57,10 @@ class BaseStrategy(object):
             angle = int(((angle / pi) * 180))
             if angle > 0 and self.world.our_defender.radial_velocity < 0.1:
                 self.comms_manager.turn_left(angle)
-            elif self.world.our_defender.radial_velocity > -0.1:
+                return True
+            elif angle < 0 and self.world.our_defender.radial_velocity > -0.1:
                 self.comms_manager.turn_right(abs(angle))
-            return True
+                return True
         return False
 
     def in_our_half(self):
@@ -70,7 +71,7 @@ class BaseStrategy(object):
 
     @staticmethod
     def calculate_speed(distance):
-        speed = 25 + log(abs(distance)) * 5 if distance <= 150 else 80
+        speed = 40 + abs(distance)/2 if distance <= 80 else 80
         return max(int(10 * round(speed / 10)), 40)
 
     def get_bounded_ball_y(self, full_width=False):
@@ -356,12 +357,15 @@ class BouncePass(BaseStrategy):
                 return self
 
         if self.state == "passed":
-            if self.time + 0.5 < time.clock():
+            if self.time + 1 < time.clock():
                 return Intercept(self.world, self.comms_manager)
             else:
                 return self
 
         if not self.world.our_defender.has_ball(self.world.ball):
+            print self.world.ball.x, self.world.ball.y
+            print self.world.our_defender.caught_area
+            print self.world.our_defender.caught_area.isInside(self.world.ball.x, self.world.ball.y)
             return GoToBall(self.world, self.comms_manager)
 
         if self.state == "aligning":
@@ -383,8 +387,8 @@ class BouncePass(BaseStrategy):
 
             if not self.send_correct_turn(angle, AIMING_THRESHOLD):
                 self.comms_manager.stop()
-                self.comms_manager.open_grabber()
-                self.world.our_defender.catcher = "open"
-                self.state = "kicking"
-
+                if abs(self.world.our_defender.radial_velocity) < 0.1:
+                    self.comms_manager.open_grabber()
+                    self.world.our_defender.catcher = "open"
+                    self.state = "kicking"
         return self
