@@ -122,6 +122,11 @@ class Controller:
                 # model_positions have their y coordinate inverted
 
                 model_positions, regular_positions = self.vision.locate(frame)
+                if not regular_positions["ball"]:
+                    regular_positions["ball"] = {
+                        "x": self.strategy.world.ball.x,
+                        "y": self.strategy.world.pitch.height - self.strategy.world.ball.y
+                    }
                 model_positions = self.postprocessing.analyze(model_positions)
 
                 # ###################### PLANNING ########################
@@ -137,6 +142,7 @@ class Controller:
                     'orange': self.strategy.world.our_defender.caught_area,
                     'black': self.strategy.world.our_defender.area_behind_catcher,
                 }
+
 
                 # Information about states
                 attackerState = ["No idea", "No idea"]
