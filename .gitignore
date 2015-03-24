@@ -53,3 +53,5 @@ croppings.json
 
 # Temporary files
 *~
+
+arduino/debug/log.txt

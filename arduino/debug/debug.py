@@ -203,9 +203,5 @@ while True:
         response = ord(ser.read())
         data.append("-> " + str(response))
         f.write("-> " + str(response) + '\n')
-<<<<<<< HEAD
         draw_data(data_window, data)
-=======
-    draw_data(data_window, data)
->>>>>>> hardware-development
 
