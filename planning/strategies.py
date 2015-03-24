@@ -141,6 +141,10 @@ class Init(BaseStrategy):
 
     def execute(self):
         self.comms_manager.close_grabber_center()
+        # print position of left and right grabbers
+        self.comms_manager.get_grabber_pos_left()
+        self.comms_manager.get_grabber_pos_right()
+        # IT ISN'T PRINTING THE RIGHT GRABBER POSITION FOR SOME REASON...
         if self.world.pitch.zones[self.world.our_defender.zone].isInside(self.world.ball.x, self.world.ball.y):
             if self.world.our_defender.has_ball:
                 return BouncePass(self.world, self.comms_manager)
