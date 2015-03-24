@@ -120,7 +120,10 @@ def parse_command(command):
         elif (command.startswith("get rotary")):
             cmd = ord("R")
             value = int(command.replace("get rotary", ""))
-            description = "Get Rotary " + str(value)                  
+            description = "Get Rotary " + str(value)      
+        elif (command.startswith("get battery")):
+            cmd = ord("B")
+            description = "Get Battery"             
     except:
         cmd == 0
 
@@ -194,12 +197,15 @@ while True:
         else:
             current_command += chr(c)
         draw_status(cmd_window, current_command)
-        draw_data(data_window, data)
     
     # also check if input is available from the serial connection
     while (ser.inWaiting()):
         response = ord(ser.read())
         data.append("-> " + str(response))
         f.write("-> " + str(response) + '\n')
+<<<<<<< HEAD
         draw_data(data_window, data)
+=======
+    draw_data(data_window, data)
+>>>>>>> hardware-development
 
