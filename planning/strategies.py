@@ -107,7 +107,7 @@ class Init(BaseStrategy):
                 if self.world.our_robot.has_ball:
                     return AimAndShoot(self.world, self.comms_manager)
                 else:
-                    return GoToBallPenalty(self.world, self.comms_manager)
+                    return GoToBallForPenalty(self.world, self.comms_manager)
 
         else:
             self.comms_manager.close_grabber_center()
