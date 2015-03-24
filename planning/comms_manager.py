@@ -78,3 +78,42 @@ class CommunicationsManager(object):
     def shutdown(self):
         print("SHUT DOWN")
         self.arduino.send(" ", 0)
+
+    # MARK THE RESPONSE WITH SOME SPECIAL CHARACTER TO DISTINGUISH BETWEEN ALL DATA BEING SENT TO THE STICK???
+    # e.g. when returning the position of left grabber, say 210,
+    # return 'PLEFT210' or something like that instead of just 210
+
+    def get_grabber_pos_left(self):
+        self.arduino.send('R', 1)
+        bits_waiting = self.arduino.serial.inWaiting()
+        res_flag = True
+        if bits_waiting: 
+            response = self.arduino.serial.read()
+            print("Position of left grabber: {response}".format(response=response))
+            while res_flag:
+                new_response = self.arduino.serial.read()
+                if response != new_response:
+                    correct_response = ord(new_response)
+                    print("Position of left grabber: {correct_response}".format(correct_response=correct_response))
+                    res_flag = False     
+
+    def get_grabber_pos_right(self):
+        self.arduino.send('R', 2)
+        bits_waiting = self.arduino.serial.inWaiting()
+        res_flag = True
+        if bits_waiting:
+            response = self.arduino.serial.read()
+            print("Position of right grabber: {response}".format(response=response))
+            while res_flag:
+                new_response = self.arduino.serial.read()
+                if response != new_response:
+                    correct_response = ord(new_response)
+                    print("Position of right grabber: {correct_response}".format(correct_response=correct_response))
+                    res_flag = False                
+
+    """
+    left when closed = 200
+    right when closed = 200
+    left when open = 211
+    right when open = 189
+    """
