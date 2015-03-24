@@ -99,14 +99,25 @@ class Init(BaseStrategy):
         return "Initialize"
 
     def execute(self):
-        self.comms_manager.close_grabber_center()
-        if self.world.pitch.zones[self.world.our_robot.zone].isInside(self.world.ball.x, self.world.ball.y):
-            if self.world.our_robot.has_ball:
-                return BouncePass(self.world, self.comms_manager)
-            else:
-                return GoToBall(self.world, self.comms_manager)
+
+        # If we shoot for penalty, use those two additional classes only
+        if penalty:
+            self.comms_manager.close_grabber_center()
+            if self.world.pitch.zones[self.world.our_robot.zone].isInside(self.world.ball.x, self.world.ball.y):
+                if self.world.our_robot.has_ball:
+                    return AimAndShoot(self.world, self.comms_manager)
+                else:
+                    return GoToBallPenalty(self.world, self.comms_manager)
+
         else:
-            return Intercept(self.world, self.comms_manager)
+            self.comms_manager.close_grabber_center()
+            if self.world.pitch.zones[self.world.our_robot.zone].isInside(self.world.ball.x, self.world.ball.y):
+                if self.world.our_robot.has_ball:
+                    return BouncePass(self.world, self.comms_manager)
+                else:
+                    return GoToBall(self.world, self.comms_manager)
+            else:
+                return Intercept(self.world, self.comms_manager)
 
 
 class GoToBall(BaseStrategy):
@@ -294,69 +305,6 @@ class AimAndPass(BaseStrategy):
         return self
 
 
-# In case of a penalty shot that we have to execute (probably a rare scenario)
-class AimAndShoot(BaseStrategy):
-    def __init__(self, world, comms_manager):
-        super(AimAndShoot, self).__init__(world, comms_manager)
-        self.state = "aiming"
-        self.time = None
-
-    def __repr__(self):
-        return "Aim and Shoot"
-
-    def execute(self):
-
-        if self.our_robot.caught_area.isInside(self.world.ball.x, self.world.ball.y):
-            if self.state == "kicking":
-                self.comms_manager.kick()
-                self.state = "shot"
-                self.time = time.clock()
-                return self
-
-        if self.state == "shot":
-            if self.time + 1 < time.clock():
-                # Assume that the ball is still in our zone.
-                # TODO: If we actually managed to kick tha ball away, do nothing inside GoToBall
-                return GoToBall(self.world, self.comms_manager)
-            else:
-                return self
-
-        if not self.our_robot.has_ball(self.world.ball):
-            return GoToBall(self.world, self.comms_manager)
-
-        # Aim at the goal
-        angle = self.our_robot.get_rotation_to_point(self.world.our_attacker.x,
-                                                              self.world.our_attacker.y)
-
-        # If the robot has a clear sight after turning by angle then shoot
-        # If not then move somewhere else and shoot
-        if not is_shot_blocked(self.world, angle):
-            if abs(angle) > AIMING_THRESHOLD:
-                self.send_correct_turn(angle)
-            else:
-                self.comms_manager.stop()
-                self.comms_manager.open_grabber()
-                self.our_robot.catcher = "open"
-                self.state = "kicking"
-        else:
-            # Align before strafing
-            angle_to_align = self.our_robot.get_rotation_to_point(self.world.their_goal.x, self.world.their_goal.x)
-            if abs(angle_to_align) > TURNING_THRESHOLD:
-                self.send_correct_turn(angle_to_align)
-            else:
-                if self.world.their_defender.y < self.world.pitch.height / 3:
-                    distance = 8 * self.world.pitch.height / 9 - self.our_robot.y
-                elif self.world.their_defender.y > 2 * self.world.pitch.height / 3:
-                    distance = self.world.pitch.height / 9 - self.our_robot.y
-
-                elif self.our_robot.y > 2 * self.world.pitch.height / 3:
-                    distance = self.our_robot.y - self.world.our_defender.y
-                else:
-                    distance = self.world.pitch.height / 9 - self.world.our_defender.y
-                self.send_correct_strafe(-distance)
-        return self
-
-
 class BouncePass(BaseStrategy):
     def __init__(self, world, comms_manager):
         super(BouncePass, self).__init__(world, comms_manager)
@@ -424,4 +372,106 @@ class BouncePass(BaseStrategy):
                 self.world.our_robot.catcher = "open"
                 self.state = "kicking"
 
+        return self
+
+
+# ATTACKER STRATEGIES FOR PENALTY - in case things go wrong for our attacker group
+
+class GoToBallForPenalty(BaseStrategy):
+    def __init__(self, world, comms_manager):
+        super(GoToBall, self).__init__(world, comms_manager)
+        self.state = "go to ball"
+
+    def __repr__(self):
+        return "Go To Ball For Penalty"
+
+    def execute(self):
+
+        if self.world.our_robot.has_ball(self.world.ball):
+            return AimAndShoot(self.world, self.comms_manager)
+
+        if self.world.our_robot.catcher == "closed":
+            # move back if the ball is in the catcher area
+            if self.world.our_robot.can_catch_ball(self.world.ball):
+                self.comms_manager.move_backward(40)
+            else:
+                self.world.our_robot.catcher = "open"
+                self.comms_manager.open_grabber()
+            return self
+
+        if self.send_correct_catch():
+            return AimAndShoot(self.world, self.comms_manager)
+
+        angle = self.world.our_robot.get_rotation_to_point(self.world.ball.x, self.world.ball.y)
+        if abs(angle) > TURNING_THRESHOLD:
+            self.send_correct_turn(angle)
+        else:
+            distance_to_ball = self.world.our_robot.get_displacement_to_point(self.world.ball.x, self.world.ball.y)
+            speed = self.calculate_speed(distance_to_ball)
+            if distance_to_ball > DISTANCE_THRESHOLD:
+                self.comms_manager.move_forward(speed)
+            else:
+                self.comms_manager.stop()
+        return self
+        
+# In case of a penalty shot that we have to execute (probably a rare scenario)
+class AimAndShoot(BaseStrategy):
+    def __init__(self, world, comms_manager):
+        super(AimAndShoot, self).__init__(world, comms_manager)
+        self.state = "aiming"
+        self.time = None
+
+    def __repr__(self):
+        return "Aim and Shoot"
+
+    def execute(self):
+
+        if self.our_robot.caught_area.isInside(self.world.ball.x, self.world.ball.y):
+            if self.state == "kicking":
+                self.comms_manager.kick()
+                self.state = "shot"
+                self.time = time.clock()
+                return self
+
+        if self.state == "shot":
+            if self.time + 1 < time.clock():
+                # Assume that the ball is still in our zone.
+                # TODO: If we actually managed to kick tha ball away, do nothing inside GoToBall
+                return GoToBall(self.world, self.comms_manager)
+            else:
+                return self
+
+        if not self.our_robot.has_ball(self.world.ball):
+            return GoToBall(self.world, self.comms_manager)
+
+        # Aim at the middle of their goal
+        angle = self.our_robot.get_rotation_to_point(self.world.their_goal.get_polygon.center.x,
+                                                              self.world.their_goal.get_polygon.center.y)
+
+        # If the robot has a clear sight after turning by angle then shoot
+        # If not then move somewhere else and shoot
+        if not is_shot_blocked(self.world, angle):
+            if abs(angle) > AIMING_THRESHOLD:
+                self.send_correct_turn(angle)
+            else:
+                self.comms_manager.stop()
+                self.comms_manager.open_grabber()
+                self.our_robot.catcher = "open"
+                self.state = "kicking"
+        else:
+            # Align before strafing
+            angle_to_align = self.our_robot.get_rotation_to_point(self.world.their_goal.x, self.world.their_goal.x)
+            if abs(angle_to_align) > TURNING_THRESHOLD:
+                self.send_correct_turn(angle_to_align)
+            else:
+                if self.world.their_defender.y < self.world.pitch.height / 3:
+                    distance = 8 * self.world.pitch.height / 9 - self.our_robot.y
+                elif self.world.their_defender.y > 2 * self.world.pitch.height / 3:
+                    distance = self.world.pitch.height / 9 - self.our_robot.y
+
+                elif self.our_robot.y > 2 * self.world.pitch.height / 3:
+                    distance = self.our_robot.y - self.world.our_defender.y
+                else:
+                    distance = self.world.pitch.height / 9 - self.world.our_defender.y
+                self.send_correct_strafe(-distance)
         return self
