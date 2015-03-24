@@ -1,5 +1,5 @@
 from math import tan, pi
-
+from Polygon.cPolygon import Polygon
 
 def is_shot_blocked(world, angle_to_turn=0):
     """
@@ -47,15 +47,36 @@ def is_wall_in_front(world):
     """
     Checks if there is a wall within the catcher area
     """
+    cm_to_px = 3.7
+    grabber_length= 6.7
     robot = world.our_defender
     zone = world.pitch.zones[world.our_defender.zone]
+    x= zone.centre[0]
+    y= zone.centre[1]
+    
+
+    if world.our_defender.zone == 0 or world.our_defender.zone== 2:
+        top_edge= (x+ world.pitch.width/2), y+ world.pitch.height/2
+        top_extended_point=  (x+ (cm_to_px* grabber_length) + world.pitch.width/2), y+ world.pitch.height/2
+        bottom_extended_point= (x+ (cm_to_px* grabber_length) + world.pitch.width/2), y - world.pitch.height/2
+        bottom_edge= ((x + world.pitch.width/2), y- world.pitch.height/ 2
+        extraArea= Polygon((top_edge, top_extended_point, bottom_extended_point, bottom_edge))
+        extendedZone= zone & extraArea
+
+    else:
+        top_edge= (x- world.pitch.width/2), y+ world.pitch.height/2
+        top_extended_point=  (x- (cm_to_px* grabber_length) - world.pitch.width/2), y+ world.pitch.height/2
+        bottom_extended_point= (x- (cm_to_px* grabber_length) - world.pitch.width/2), y - world.pitch.height/2
+        bottom_edge= ((x - world.pitch.width/2), y- world.pitch.height/ 2
+        extraArea= Polygon((top_edge, top_extended_point, bottom_extended_point, bottom_edge))
+        extendedZone= zone & extraArea
 
     grabber_area_left = robot.catcher_area_left
-    outside_polygon_left(zone| grabber_area) - zone
+    outside_polygon_left(extendedZone| grabber_area) - zone
     outside_area_left = int(outside_polygon_left.area())
 
     grabber_area_right= robot.catcher_area_right
-    outside_polygon_right(zone| grabber_area) - zone
+    outside_polygon_right(extendedZone| grabber_area) - zone
     outside_area_right = int(outside_polygon_left.area())
 
     if outside_area_left !=0 and outside_area_right != 0: 
