@@ -55,9 +55,9 @@ class BaseStrategy(object):
 
         if abs(angle) > threshold:
             angle = int(((angle / pi) * 180))
-            if angle > 0:
+            if angle > 0 and self.world.our_defender.radial_velocity < 0.1:
                 self.comms_manager.turn_left(angle)
-            else:
+            elif self.world.our_defender.radial_velocity > -0.1:
                 self.comms_manager.turn_right(abs(angle))
             return True
         return False

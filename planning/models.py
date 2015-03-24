@@ -186,6 +186,8 @@ class Robot(PitchObject):
         super(Robot, self).__init__(x, y, angle, velocity, width, length, height, angle_offset)
         self._zone = zone
         self._catcher = 'closed'
+        self.old_angles = None
+        self.radial_velocity = 0
 
     @property
     def zone(self):
@@ -479,11 +481,27 @@ class World(object):
     def update_positions(self, pos_dict):
         """ This method will update the positions of the pitch objects
             that it gets passed by the vision system """
+
+
         self.our_attacker.vector = pos_dict['our_attacker']
         self.their_attacker.vector = pos_dict['their_attacker']
         self.our_defender.vector = pos_dict['our_defender']
         self.their_defender.vector = pos_dict['their_defender']
         self.ball.vector = pos_dict['ball']
+
+        if self.our_defender.old_angles is None:
+            self.our_defender.old_angles = [self.our_defender.vector.angle]*5
+
+        self.our_defender.old_angles.pop(0)
+        self.our_defender.old_angles.append(self.our_defender.vector.angle)
+
+        radial_velocity = self.our_defender.old_angles[4] - self.our_defender.old_angles[0]
+        if radial_velocity > pi:
+            radial_velocity = 2*pi - radial_velocity
+        elif radial_velocity < -pi:
+            radial_velocity = -2*pi - radial_velocity
+
+        self.our_defender.radial_velocity = radial_velocity
 
         # Checking if the position of the ball makes sense
         if self.ball.x == 0 and self.ball.y == 0:
