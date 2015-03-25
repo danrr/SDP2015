@@ -359,9 +359,6 @@ class BouncePass(BaseStrategy):
                 return self
 
         if not self.world.our_defender.has_ball(self.world.ball):
-            print self.world.ball.x, self.world.ball.y
-            print self.world.our_defender.caught_area
-            print self.world.our_defender.caught_area.isInside(self.world.ball.x, self.world.ball.y)
             return GoToBall(self.world, self.comms_manager)
 
         if self.state == "aligning":
