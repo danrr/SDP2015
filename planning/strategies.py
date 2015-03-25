@@ -6,7 +6,7 @@ GOAL_ALIGN_OFFSET = 50
 BALL_VELOCITY = 3
 DISTANCE_THRESHOLD = 15
 AIMING_THRESHOLD = pi / 27
-STRAFING_THRESHOLD = pi / 5
+STRAFING_THRESHOLD = pi / 4
 TURNING_THRESHOLD = pi / 10
 FULL_TURN_THRESHOLD = pi - pi / 60
 
@@ -98,15 +98,9 @@ class BaseStrategy(object):
         return False
 
     def move_away_from_wall(self):
-        wall = is_wall_in_front(self.world)
-        if wall == "both":
+        if is_wall_in_front(self.world):
             self.comms_manager.move_backward(40)
-            return True
-        elif wall == "left":
-            self.comms_manager.strafe_right(100)
-            return True
-        elif wall == "right":
-            self.comms_manager.strafe_left(100)
+            self.state = "recovering"
             return True
         return False
 
@@ -180,8 +174,8 @@ class GoToBall(BaseStrategy):
                 self.world.our_defender.catcher = "closed"
                 self.comms_manager.close_grabber_center()
 
-        # if self.move_away_from_wall():
-        #     return self
+        if self.move_away_from_wall():
+            return self
 
         if self.send_correct_catch():
             return BouncePass(self.world, self.comms_manager)
@@ -221,6 +215,8 @@ class Intercept(BaseStrategy):
             return BouncePass(self.world, self.comms_manager)
 
         # turn to face enemy attacker
+        if self.move_away_from_wall():
+            return self
         angle = self.world.our_defender.get_rotation_to_point(self.world.pitch.width / 2, self.world.our_defender.y)
         angle_threshold = STRAFING_THRESHOLD if self.state == "strafing" else TURNING_THRESHOLD
         if self.send_correct_turn(angle, angle_threshold):

@@ -48,9 +48,8 @@ def is_wall_in_front(world):
     Checks if there is a wall within the catcher area
     """
     robot = world.our_defender
-    zone = world.pitch.zones[world.our_defender.zone]
-
-    grabber_area = robot.catcher_area_left | robot.catcher_area_right
+    zone = world.pitch.zones[world.our_defender.zone] | world.pitch.zones[world.their_attacker.zone]
+    grabber_area = robot.catcher_area_left & robot.catcher_area_right
     outside_polygon = (zone | grabber_area) - zone
     outside_area = int(outside_polygon.area())
 
