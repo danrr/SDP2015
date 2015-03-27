@@ -136,10 +136,9 @@ class Controller:
                 fps = float(counter) / (time.clock() - timer)
 
                 # Draw vision content and actions
-                default_actions = {'move': 0, 'strafe': 0, 'angle': 0, 'grabber': -1, 'kick': 0}
                 self.GUI.draw(
                     frame, model_positions, regular_positions, fps,
-                    defender_state, default_actions, default_actions, grabbers,
+                    defender_state, grabbers,
                     our_color=self.color, our_side=self.side, key=c, preprocess=pre_options)
                 counter += 1
 

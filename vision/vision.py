@@ -354,7 +354,7 @@ class GUI(object):
                     self.jitterQueue.popleft()
 
     def draw(self, frame, model_positions, regular_positions, fps,
-             dState, a_action, d_action, grabbers, our_color, our_side,
+             dState, grabbers, our_color, our_side,
              key=None, preprocess=None):
         """
         Draw information onto the GUI given positions from the vision and post processing.
@@ -428,7 +428,7 @@ class GUI(object):
                     self.data_text(
                         frame_with_blank, (frame_width, frame_height), our_side, key,
                         model_positions[key].x, model_positions[key].y,
-                        model_positions[key].angle, model_positions[key].velocity, a_action, d_action)
+                        model_positions[key].angle, model_positions[key].velocity)
                     self.draw_velocity(
                         frame_with_blank, (frame_width, frame_height),
                         model_positions[key].x, model_positions[key].y,
@@ -483,8 +483,7 @@ class GUI(object):
         if points is not None:
             cv2.line(frame, points[0], points[1], BGR_COMMON['red'], thickness)
 
-    def data_text(self, frame, frame_offset, our_side, text, x, y, angle, velocity, a_action, d_action):
-
+    def data_text(self, frame, frame_offset, our_side, text, x, y, angle, velocity):
         if x is not None and y is not None:
             frame_width, frame_height = frame_offset
             if text == "ball":
@@ -516,10 +515,6 @@ class GUI(object):
 
             if velocity is not None:
                 self.draw_text(frame, 'velocity: %.2f' % velocity, draw_x, y_offset + 40)
-        if text == 'our_attacker':
-            self.draw_actions(frame, a_action, draw_x, y_offset + 50)
-        elif text == 'our_defender':
-            self.draw_actions(frame, d_action, draw_x, y_offset + 50)
 
     @staticmethod
     def draw_text(frame, text, x, y, color=BGR_COMMON['green'], thickness=1.3, size=0.3, ):
@@ -552,17 +547,6 @@ class GUI(object):
         self.draw_text(frame, "Defender State:", x_main(2) + x_offset, y_offset, size=0.6)
         self.draw_text(frame, dState[0], x_main(2) + x_offset, y_offset + 15, size=0.6)
         self.draw_text(frame, dState[1], x_main(2) + x_offset, y_offset + 30, size=0.6)
-
-    def draw_actions(self, frame, action, x, y):
-        # Modified to match the new dictionary created by Jon
-        self.draw_text(
-            frame, "Move: " + str(action['move']), x, y + 5, color=BGR_COMMON['white'])
-        self.draw_text(
-            frame, "Strafe: " + str(action['strafe']), x, y + 15, color=BGR_COMMON['white'])
-        self.draw_text(
-            frame, "Angle: " + str(action['angle']), x, y + 25, color=BGR_COMMON['white'])
-        self.draw_text(frame, "Kick: " + str(action['kick']), x, y + 35, color=BGR_COMMON['white'])
-        self.draw_text(frame, "Grabber: " + str(action['grabber']), x, y + 45, color=BGR_COMMON['white'])
 
     # sets whether we are using calibration loop or real video feed
     def set_calibration_loop(self, value):
