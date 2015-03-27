@@ -10,7 +10,7 @@ from collections import deque
 from Polygon.cPolygon import Polygon
 
 
-TEAM_COLORS = {'yellow', 'blue'}
+TEAM_COLORS = set(['yellow', 'blue'])
 SIDES = ['left', 'right']
 PITCHES = [0, 1]
 
@@ -92,7 +92,7 @@ class Vision:
 
     @staticmethod
     def _get_opponent_color(our_color):
-        return (TEAM_COLORS - {our_color}).pop()
+        return (TEAM_COLORS - set([our_color])).pop()
 
     def locate(self, frame):
         """
@@ -261,7 +261,7 @@ class Camera(object):
         Returns the frame if available, otherwise returns None.
         """
         # counts the frame no's for video loop
-        if (calibration_loop):
+        if calibration_loop:
             status, frame = True, cv2.imread('img/test' + str(self.frameNo) + '.jpg')
             if self.frameNo == 19:
                 self.frameNo = 0
@@ -315,7 +315,8 @@ class GUI(object):
         # 20 zeroes, arbitrary number
         self.jitterQueue = deque([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 
-    def to_info(self, args):
+    @staticmethod
+    def to_info(args):
         """
         Convert a tuple into a vector
 
@@ -368,7 +369,7 @@ class GUI(object):
         # Draw dividors for the zones
         self.draw_zones(frame, frame_width, frame_height)
 
-        their_color = list(TEAM_COLORS - {our_color})[0]
+        their_color = list(TEAM_COLORS - set([our_color]))[0]
 
         key_color_pairs = zip(
             ['our_defender', 'their_defender', 'our_attacker', 'their_attacker'],
@@ -432,9 +433,6 @@ class GUI(object):
                         frame_with_blank, (frame_width, frame_height),
                         model_positions[key].x, model_positions[key].y,
                         model_positions[key].angle, model_positions[key].velocity)
-
-        # Draw center of uncroppped frame (test code)
-        # cv2.circle(frame_with_blank, (266,147), 1, BGR_COMMON['black'], 1)
 
         cv2.imshow(self.VISION, frame_with_blank)
 
