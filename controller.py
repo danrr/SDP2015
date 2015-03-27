@@ -118,8 +118,6 @@ class Controller:
                 self.strategy.update_world(model_positions)
                 self.strategy = self.strategy.execute()
 
-                # self.send_response_to_planner()
-
                 # Information about the grabbers from the world
                 grabbers = {
                     'red': self.strategy.world.our_defender.catcher_area,
