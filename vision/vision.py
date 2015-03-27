@@ -10,8 +10,7 @@ from collections import deque
 from Polygon.cPolygon import Polygon
 
 
-
-TEAM_COLORS = set(['yellow', 'blue'])
+TEAM_COLORS = {'yellow', 'blue'}
 SIDES = ['left', 'right']
 PITCHES = [0, 1]
 
@@ -50,10 +49,10 @@ class Vision:
             self.us = [
                 RobotTracker(
                     color=color, crop=zones[0], offset=zones[0][0], pitch=pitch,
-                    name='Our Defender', calibration=calibration),   # defender
+                    name='Our Defender', calibration=calibration),  # defender
                 RobotTracker(
                     color=color, crop=zones[2], offset=zones[2][0], pitch=pitch,
-                    name='Our Attacker', calibration=calibration)   # attacker
+                    name='Our Attacker', calibration=calibration)  # attacker
             ]
 
             self.opponents = [
@@ -78,7 +77,7 @@ class Vision:
             self.opponents = [
                 RobotTracker(
                     color=opponent_color, crop=zones[0], offset=zones[0][0], pitch=pitch,
-                    name='Their Defender', calibration=calibration),   # defender
+                    name='Their Defender', calibration=calibration),  # defender
                 RobotTracker(
                     color=opponent_color, crop=zones[2], offset=zones[2][0], pitch=pitch,
                     name='Their Attacker', calibration=calibration)
@@ -91,8 +90,9 @@ class Vision:
     def _get_zones(self, width, height):
         return [(val[0], val[1], 0, height) for val in tools.get_zones(width, height, pitch=self.pitch)]
 
-    def _get_opponent_color(self, our_color):
-        return (TEAM_COLORS - set([our_color])).pop()
+    @staticmethod
+    def _get_opponent_color(our_color):
+        return (TEAM_COLORS - {our_color}).pop()
 
     def locate(self, frame):
         """
@@ -133,7 +133,7 @@ class Vision:
         """
         plane_height = 250.0
         robot_height = 20.0
-        coefficient = robot_height/plane_height
+        coefficient = robot_height / plane_height
 
         x = point[0]
         y = point[1]
@@ -144,7 +144,7 @@ class Vision:
         delta_x = dist_x * coefficient
         delta_y = dist_y * coefficient
 
-        return (int(x-delta_x), int(y-delta_y))
+        return int(x - delta_x), int(y - delta_y)
 
     def get_adjusted_positions(self, positions):
         try:
@@ -200,7 +200,7 @@ class Vision:
 
         # Define processes
         processes = [
-            Process(target=obj.find, args=((frame, queues[i]))) for (i, obj) in enumerate(objects)]
+            Process(target=obj.find, args=(frame, queues[i])) for (i, obj) in enumerate(objects)]
 
         # Start processes
         for process in processes:
@@ -215,7 +215,8 @@ class Vision:
             process.join()
         return positions
 
-    def to_info(self, args, height):
+    @staticmethod
+    def to_info(args, height):
         """
         Returns a dictionary with object position information
         """
@@ -250,19 +251,19 @@ class Camera(object):
         self.nc_matrix = radial_data['new_camera_matrix']
         self.c_matrix = radial_data['camera_matrix']
         self.dist = radial_data['dist']
-        #used for calibration loop
+        # used for calibration loop
         self.frameNo = 0
 
-    def get_frame(self,calibration_loop = False):
+    def get_frame(self, calibration_loop=False):
         """
         Retrieve a frame from the camera.
 
         Returns the frame if available, otherwise returns None.
         """
-        #counts the frame no's for video loop
+        # counts the frame no's for video loop
         if (calibration_loop):
-            status, frame = True, cv2.imread('img/test'+ str(self.frameNo) + '.jpg')
-            if self.frameNo==19:
+            status, frame = True, cv2.imread('img/test' + str(self.frameNo) + '.jpg')
+            if self.frameNo == 19:
                 self.frameNo = 0
             else:
                 self.frameNo += 1
@@ -279,15 +280,11 @@ class Camera(object):
         return cv2.undistort(
             frame, self.c_matrix, self.dist, None, self.nc_matrix)
 
-    def get_adjusted_center(self, frame):
-        return 320-self.crop_values[0], 240-self.crop_values[2]
-
-
-
+    def get_adjusted_center(self):
+        return 320 - self.crop_values[0], 240 - self.crop_values[2]
 
 
 class GUI(object):
-
     VISION = 'SUCH VISION'
     BG_SUB = 'BG Subtract'
     NORMALIZE = 'Normalize  '
@@ -297,25 +294,25 @@ class GUI(object):
     def nothing(self, x):
         pass
 
-    def __init__(self, calibration, arduino, pitch,capture):
+    def __init__(self, calibration, arduino, pitch, capture):
         self.zones = None
         self.calibration_gui = CalibrationGUI(calibration)
         self.arduino = arduino
         self.pitch = pitch
-        self.capture =capture
-        #identifies whteher we are using loop or real video feed
+        self.capture = capture
+        # identifies whteher we are using loop or real video feed
         self.calibration_loop = False
 
         cv2.namedWindow(self.VISION)
 
         cv2.createTrackbar(self.BG_SUB, self.VISION, 0, 1, self.nothing)
         cv2.createTrackbar(self.NORMALIZE, self.VISION, 0, 1, self.nothing)
-        #If no connection with arduino can be estabilished and slider is moved to 1
-        #it will incorrectly reflect the communications state
+        # If no connection with arduino can be estabilished and slider is moved to 1
+        # it will incorrectly reflect the communications state
         cv2.createTrackbar(
-            self.COMMS, self.VISION, self.arduino.comms, 1, lambda x:  self.arduino.setComms(x))
-        cv2.createTrackbar(self.CALIB_LOOP,self.VISION,0, 1,lambda x: self.set_calibration_loop(x))
-        #20 zeroes, arbitrary number
+            self.COMMS, self.VISION, self.arduino.comms, 1, lambda x: self.arduino.setComms(x))
+        cv2.createTrackbar(self.CALIB_LOOP, self.VISION, 0, 1, lambda x: self.set_calibration_loop(x))
+        # 20 zeroes, arbitrary number
         self.jitterQueue = deque([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 
     def to_info(self, args):
@@ -342,22 +339,21 @@ class GUI(object):
 
         return {'x': x, 'y': y, 'angle': angle, 'velocity': velocity}
 
-    def cast_binary(self, x):
+    @staticmethod
+    def cast_binary(x):
         return x == 1
 
-    #For all robots/plates on the field takes how much they have moved since the last frame
-    #Computes the jitter factor
-    def calcJitterFactor(self,model_positions):
+    # For all robots/plates on the field takes how much they have moved since the last frame
+    # Computes the jitter factor
+    def calcJitterFactor(self, model_positions):
         for name, info in model_positions.iteritems():
             if name != 'ball':
-                if not(info.x is None) and not(info.y is None):
-                    #print abs(info.velocity)
+                if not (info.x is None) and not (info.y is None):
                     self.jitterQueue.append(abs(info.velocity))
                     self.jitterQueue.popleft()
 
-
     def draw(self, frame, model_positions, regular_positions, fps,
-             aState, dState, a_action, d_action, grabbers, our_color, our_side,
+             dState, a_action, d_action, grabbers, our_color, our_side,
              key=None, preprocess=None):
         """
         Draw information onto the GUI given positions from the vision and post processing.
@@ -372,11 +368,11 @@ class GUI(object):
         # Draw dividors for the zones
         self.draw_zones(frame, frame_width, frame_height)
 
-        their_color = list(TEAM_COLORS - set([our_color]))[0]
+        their_color = list(TEAM_COLORS - {our_color})[0]
 
         key_color_pairs = zip(
             ['our_defender', 'their_defender', 'our_attacker', 'their_attacker'],
-            [our_color, their_color]*2)
+            [our_color, their_color] * 2)
 
         self.draw_ball(frame, regular_positions['ball'])
 
@@ -387,32 +383,29 @@ class GUI(object):
         if fps is not None:
             self.draw_text(frame, 'FPS: %.1f' % fps, 0, 10, BGR_COMMON['green'], 1)
 
-        #calculates the jitter factor per 20 frames, 19 is just an arbitrary number
+        # calculates the jitter factor per 20 frames, 19 is just an arbitrary number
         self.calcJitterFactor(model_positions)
         jitterFactor = 0
         for jitterFrame in self.jitterQueue:
             jitterFactor += jitterFrame
-        #indicates whether we can see all robots
+        # indicates whether we can see all robots
         can_see_all = True
         for key in ['our_defender', 'our_attacker', 'their_defender', 'their_attacker']:
             for label in regular_positions[key]:
-                #if some of box direction angle is none we cant see the plate
-                if (regular_positions[key][label] == None):
+                # if some of box direction angle is none we cant see the plate
+                if regular_positions[key][label] is None:
                     can_see_all = False
-                #check if the box is of a reasonable size
-                elif (label=='box'):
-                        area = Polygon(regular_positions[key][label]).area()
-                        #guessed reasonable number
-                        if (area<600):
-                            can_see_all = False
-
+                # check if the box is of a reasonable size
+                elif label == 'box':
+                    area = Polygon(regular_positions[key][label]).area()
+                    # guessed reasonable number
+                    if area < 60:
+                        can_see_all = False
 
         if can_see_all:
-            self.draw_text(frame,'%.1f JITTERS' % jitterFactor,415,15,BGR_COMMON['green'],thickness = 1.5, size = 0.4)
+            self.draw_text(frame, '%.1f JITTERS' % jitterFactor, 415, 15, BGR_COMMON['green'], thickness=1.5, size=0.4)
         else:
-            self.draw_text(frame,'CANT SEE' ,415,15,BGR_COMMON['red'],thickness = 1.5,size = 0.4)
-
-
+            self.draw_text(frame, 'CANT SEE', 415, 15, BGR_COMMON['red'], thickness=1.5, size=0.4)
 
         if preprocess is not None:
             preprocess['normalize'] = self.cast_binary(
@@ -426,7 +419,7 @@ class GUI(object):
         # Extend image downwards and draw states.
         blank = np.zeros_like(frame)[:200, :, :]
         frame_with_blank = np.vstack((frame, blank))
-        self.draw_states(frame_with_blank, aState, dState, (frame_width, frame_height))
+        self.draw_states(frame_with_blank, dState, (frame_width, frame_height))
 
         if model_positions and regular_positions:
             for key in ['ball', 'our_defender', 'our_attacker', 'their_defender', 'their_attacker']:
@@ -461,11 +454,13 @@ class GUI(object):
             self.draw_line(
                 frame, ((0, int(position_dict['y'])), (frame_width, int(position_dict['y']))), 1)
 
-    def draw_dot(self, frame, location):
+    @staticmethod
+    def draw_dot(frame, location):
         if location is not None:
             cv2.circle(frame, location, 2, BGR_COMMON['white'], 1)
 
-    def draw_robot(self, frame, position_dict, color):
+    @staticmethod
+    def draw_robot(frame, position_dict, color):
         if position_dict['box']:
             cv2.polylines(frame, [np.array(position_dict['box'])], True, BGR_COMMON[color], 2)
         if position_dict['front']:
@@ -485,7 +480,8 @@ class GUI(object):
                 frame, position_dict['direction'][0], position_dict['direction'][1],
                 BGR_COMMON['orange'], 2)
 
-    def draw_line(self, frame, points, thickness=2):
+    @staticmethod
+    def draw_line(frame, points, thickness=2):
         if points is not None:
             cv2.line(frame, points[0], points[1], BGR_COMMON['red'], thickness)
 
@@ -497,9 +493,9 @@ class GUI(object):
                 y_offset = frame_height + 130
                 draw_x = 30
             else:
-                x_main = lambda zz: (frame_width/4)*zz
+                x_main = lambda zz: (frame_width / 4) * zz
                 x_offset = 30
-                y_offset = frame_height+20
+                y_offset = frame_height + 20
 
                 if text == "our_defender":
                     draw_x = x_main(0) + x_offset
@@ -511,7 +507,7 @@ class GUI(object):
                     draw_x = x_main(1) + x_offset
 
                 if our_side == "right":
-                    draw_x = frame_width-draw_x - 80
+                    draw_x = frame_width - draw_x - 80
 
             self.draw_text(frame, text, draw_x, y_offset)
             self.draw_text(frame, 'x: %.2f' % x, draw_x, y_offset + 10)
@@ -523,77 +519,72 @@ class GUI(object):
             if velocity is not None:
                 self.draw_text(frame, 'velocity: %.2f' % velocity, draw_x, y_offset + 40)
         if text == 'our_attacker':
-            self.draw_actions(frame, a_action, draw_x, y_offset+50)
+            self.draw_actions(frame, a_action, draw_x, y_offset + 50)
         elif text == 'our_defender':
-            self.draw_actions(frame, d_action, draw_x, y_offset+50)
+            self.draw_actions(frame, d_action, draw_x, y_offset + 50)
 
-    def draw_text(self, frame, text, x, y, color=BGR_COMMON['green'], thickness=1.3, size=0.3,):
+    @staticmethod
+    def draw_text(frame, text, x, y, color=BGR_COMMON['green'], thickness=1.3, size=0.3, ):
         if x is not None and y is not None:
             cv2.putText(
                 frame, text, (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX, size, color, thickness)
 
-    def draw_grabbers(self, frame, grabbers, height):
+    @staticmethod
+    def draw_grabbers(frame, grabbers, height):
         for colour, [area] in grabbers.items():
             area = [(x, height - y) for x, y in area]
             area = [(int(x) if x > -1 else 0, int(y) if y > -1 else 0) for x, y in area]
             cv2.polylines(frame, [np.array(area)], True, BGR_COMMON[colour], 1)
 
     def draw_velocity(self, frame, frame_offset, x, y, angle, vel, scale=10):
-        if not(None in [frame, x, y, angle, vel]) and vel is not 0:
+        if not (None in [frame, x, y, angle, vel]) and vel is not 0:
             frame_width, frame_height = frame_offset
-            r = vel*scale
+            r = vel * scale
             y = frame_height - y
             start_point = (x, y)
             end_point = (x + r * np.cos(angle), y - r * np.sin(angle))
             self.draw_line(frame, (start_point, end_point))
 
-    def draw_states(self, frame, aState, dState, frame_offset):
+    def draw_states(self, frame, dState, frame_offset):
         frame_width, frame_height = frame_offset
-        x_main = lambda zz: (frame_width/4)*zz
+        x_main = lambda zz: (frame_width / 4) * zz
         x_offset = 20
-        y_offset = frame_height+140
-
-        self.draw_text(frame, "Attacker State:", x_main(1) - x_offset, y_offset, size=0.6)
-        self.draw_text(frame, aState[0], x_main(1) - x_offset, y_offset + 15, size=0.6)
-        self.draw_text(frame, aState[1], x_main(1) - x_offset, y_offset + 30, size=0.6)
+        y_offset = frame_height + 140
 
         self.draw_text(frame, "Defender State:", x_main(2) + x_offset, y_offset, size=0.6)
         self.draw_text(frame, dState[0], x_main(2) + x_offset, y_offset + 15, size=0.6)
-        self.draw_text(frame, dState[1], x_main(2)+x_offset, y_offset + 30, size=0.6)
+        self.draw_text(frame, dState[1], x_main(2) + x_offset, y_offset + 30, size=0.6)
 
     def draw_actions(self, frame, action, x, y):
         # Modified to match the new dictionary created by Jon
         self.draw_text(
-            frame, "Move: " + str(action['move']), x, y+5, color=BGR_COMMON['white'])
+            frame, "Move: " + str(action['move']), x, y + 5, color=BGR_COMMON['white'])
         self.draw_text(
-            frame, "Strafe: " + str(action['strafe']), x, y+15, color=BGR_COMMON['white'])
+            frame, "Strafe: " + str(action['strafe']), x, y + 15, color=BGR_COMMON['white'])
         self.draw_text(
             frame, "Angle: " + str(action['angle']), x, y + 25, color=BGR_COMMON['white'])
         self.draw_text(frame, "Kick: " + str(action['kick']), x, y + 35, color=BGR_COMMON['white'])
         self.draw_text(frame, "Grabber: " + str(action['grabber']), x, y + 45, color=BGR_COMMON['white'])
 
-    #sets whether we are using calibration loop or real video feed
-    def set_calibration_loop(self,value):
+    # sets whether we are using calibration loop or real video feed
+    def set_calibration_loop(self, value):
         self.calibration_loop = value
-        #capture video
-        #first frame is usually distorted, want to ditch it
+        # capture video
+        # first frame is usually distorted, want to ditch it
         ret, frame = self.capture.read()
-        #20 is number of images we have captured
+        # 20 is number of images we have captured
         if value:
-            i=0
-            while i!= 20:
+            i = 0
+            while i != 20:
                 ret, frame = self.capture.read()
                 cv2.imwrite('img/test' + str(i) + '.jpg', frame)
                 i += 1
 
 
-
-
 if __name__ == '__main__':
-
     tableNumber = 0
     video_port = 0
-    name = "Team 14" # Name of the main GUI frame
+    name = "Team 14"  # Name of the main GUI frame
     color = "blue"
     our_side = "left"
     calibration = tools.get_colors(tableNumber)
