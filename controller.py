@@ -48,8 +48,7 @@ class Controller:
         self.camera = Camera(port=video_port, pitch=self.pitch)
         frame = self.camera.get_frame()
         # gets center of the frame based on the table croppings,
-        # TODO Check whether this is working correctly, as it gets the left and top coordinate from croppings and always subtracts it
-        center_point = self.camera.get_adjusted_center(frame)
+        center_point = self.camera.get_adjusted_center()
 
         # Set up vision
         self.calibration = tools.get_colors(pitch)
@@ -83,24 +82,9 @@ class Controller:
 
         self.strategy = Init(world, self.comms_manager)
 
-    # def send_response_to_planner(self):
-    #     if self.arduino.serial:
-    #         busy_waiting = self.arduino.serial.inWaiting()
-    #         if busy_waiting:
-    #             message = self.arduino.serial.read()
-    #             print ord(message)
-    #             if chr(ord(message)) in ["W", "S", "A", "D", "C", "V", " "]:
-    #                 print "Received", message
-    #                 self.planner.reset_time(chr(ord(message)))
-    #             elif ord(message) == 255:
-    #                 pass
-    #     else:
-    #         for message in ["W", "S", "A", "D", "C", "V", " "]:
-    #             self.planner.reset_time(message)
-
-    def wow(self):
+    def main(self):
         """
-        Ready your sword, here be dragons.
+        Loops through frames; updates world; runs strategy on world state
         """
         counter = 1L
         timer = time.clock()
@@ -108,7 +92,7 @@ class Controller:
         try:
             c = True
             while c != 27:  # the ESC key
-                #gets frame, and sets whether we are using real video feed or calibration one
+                # gets frame, and sets whether we are using real video feed or calibration one
                 frame = self.camera.get_frame(self.GUI.calibration_loop)
 
                 pre_options = self.preprocessing.options
@@ -134,8 +118,6 @@ class Controller:
                 self.strategy.update_world(model_positions)
                 self.strategy = self.strategy.execute()
 
-                # self.send_response_to_planner()
-
                 # Information about the grabbers from the world
                 grabbers = {
                     'red': self.strategy.world.our_defender.catcher_area,
@@ -143,10 +125,8 @@ class Controller:
                     'black': self.strategy.world.our_defender.area_behind_catcher,
                 }
 
-
                 # Information about states
-                attackerState = ["No idea", "No idea"]
-                defenderState = [repr(self.strategy), self.strategy.state]
+                defender_state = [repr(self.strategy), self.strategy.state]
                 # ######################## END PLANNING ###############################
 
                 # Use 'y', 'b', 'r' to change color.
@@ -154,10 +134,9 @@ class Controller:
                 fps = float(counter) / (time.clock() - timer)
 
                 # Draw vision content and actions
-                default_actions = {'move': 0, 'strafe': 0, 'angle': 0, 'grabber': -1, 'kick': 0}
                 self.GUI.draw(
-                    frame, model_positions, regular_positions, fps, attackerState,
-                    defenderState, default_actions, default_actions, grabbers,
+                    frame, model_positions, regular_positions, fps,
+                    defender_state, grabbers,
                     our_color=self.color, our_side=self.side, key=c, preprocess=pre_options)
                 counter += 1
 
@@ -251,7 +230,7 @@ if __name__ == '__main__':
     # Based on nocomms value ( -n / --nocomms) turns off or on the communications for arduino
     if args.nocomms:
         c = Controller(
-            pitch=int(args.pitch), color=args.color, our_side=args.side, comms=0).wow()
+            pitch=int(args.pitch), color=args.color, our_side=args.side, comms=0).main()
     else:
         c = Controller(
-            pitch=int(args.pitch), color=args.color, our_side=args.side).wow()
+            pitch=int(args.pitch), color=args.color, our_side=args.side).main()
