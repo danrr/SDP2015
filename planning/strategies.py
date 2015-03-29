@@ -159,7 +159,7 @@ class GoToBall(BaseStrategy):
             return Intercept(self.world, self.comms_manager)
 
         if self.world.our_defender.has_ball(self.world.ball):
-            return BouncePass(self.world, self.comms_manager)
+            return AimAndPass(self.world, self.comms_manager)
 
         if self.world.our_defender.catcher == "closed":
             # move back if the ball is in the catcher area
@@ -310,7 +310,7 @@ class AimAndPass(BaseStrategy):
                                                               self.world.our_attacker.y)
 
         # If the robot has a clear pass after turning by angle then pass
-        # If not then move somewhere else and pass
+        # If not then use bounce pass strategy
         if not is_shot_blocked(self.world, angle):
             if not self.send_correct_turn(angle, AIMING_THRESHOLD):
                 self.comms_manager.stop()
@@ -318,20 +318,7 @@ class AimAndPass(BaseStrategy):
                 self.world.our_defender.catcher = "open"
                 self.state = "kicking"
         else:
-            # Align before strafing
-            angle_to_align = self.world.our_defender.get_rotation_to_point(self.world._pitch.width / 2,
-                                                                           self.world.our_defender.y)
-            if not self.send_correct_turn(angle_to_align, TURNING_THRESHOLD):
-                if self.world.their_attacker.y < self.world.pitch.height / 3:
-                    distance = 8 * self.world.pitch.height / 9 - self.world.our_defender.y
-                elif self.world.their_attacker.y > 2 * self.world.pitch.height / 3:
-                    distance = self.world.pitch.height / 9 - self.world.our_defender.y
-                elif self.world.our_attacker.y > 2 * self.world.pitch.height / 3 or \
-                                self.world.our_attacker.y < 1 * self.world.pitch.height / 3:
-                    distance = self.world.our_attacker.y - self.world.our_defender.y
-                else:
-                    distance = self.world.pitch.height / 9 - self.world.our_defender.y
-                self.send_correct_strafe(-distance)
+            return BouncePass(self.world, self.comms_manager)
         return self
 
 
@@ -365,18 +352,19 @@ class BouncePass(BaseStrategy):
             centre = centre_of_zone(self.world, self.world.our_defender)
             if not self.move_to_point(centre):
                 self.state = "aiming"
-                
+
         # If the robot has a clear pass at the top of the pitch pass
         # If not then turn 90 and pass
         if self.state == "aiming":
-            if self.world.their_attacker.y > self.world.pitch.height / 2:
-                angle = self.world.our_defender.get_rotation_to_point(
+            angle = self.world.our_defender.get_rotation_to_point(
                     centre_of_zone(self.world, self.world.their_attacker)[0], 30
                 )
-            else:
+
+            if self.world.their_attacker.y > self.world.pitch.height / 2 and  ( is_shot_blocked(self.world,angle) or self.world.their_attacker.velocity >1) :
                 angle = self.world.our_defender.get_rotation_to_point(
                     centre_of_zone(self.world, self.world.their_attacker)[0], self.world.pitch.height - 30
                 )
+
 
             if not self.send_correct_turn(angle, AIMING_THRESHOLD):
                 self.comms_manager.stop()
