@@ -94,7 +94,7 @@ Command commands[7];
 void setup() {
   SDPsetup();
   // attach the kicker servo to pin 5, with 600us to 2400us pulses.
-  kicker.attach(5, 600, 2400); 
+  //kicker.attach(5, 600, 2400); 
   // initialise the IMU
   initSensors();
 
@@ -261,6 +261,8 @@ void decodeCommand() {
       if (data > 100) {
         data = 100;
       }
+      // attach the kicker servo to pin 5, with 600us to 2400us pulses.
+      kicker.attach(5, 600, 2400); 
       kicker.write(90 - 4 * data / 100.0);
       commands[1].millis = current_millis + 400;
       commands[2].millis = current_millis + 800;
@@ -406,12 +408,12 @@ void setRotationalSpeed(int target) {
   if (turnPower > 10) {
     motorBackward(_LEFT_DRIVE, turnPower);
     motorBackward(_RIGHT_DRIVE, turnPower);
-    motorStop(_BACK_DRIVE);
+    motorBackward(_BACK_DRIVE, 30);
   }
   else if (turnPower < -10) {
     motorForward(_LEFT_DRIVE, -turnPower);
     motorForward(_RIGHT_DRIVE, -turnPower);
-    motorStop(_BACK_DRIVE);
+    motorForward(_BACK_DRIVE, 10);
   }
   else {
     motorStop(_LEFT_DRIVE);
@@ -597,12 +599,14 @@ void doKick(byte power) {
 }
 
 void lowerKicker(byte power) {
-  kicker.write(90 + 10 * power / 100.0);
+  kicker.write(90);
   voidCommand(2);
 }
 
 void resetKicker(byte data) {
-  kicker.write(90);
+  //kicker.write(90);
+  // detach the kicker.
+  kicker.detach();
   voidCommand(3);
 }
 
