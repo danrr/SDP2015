@@ -1,5 +1,7 @@
 # SDP2015
 
+![Super-DH 3000 NG Ultimate](https://github.com/danrr/SDP2015/blob/master/logo/Logo.png)
+
 ###Setup
 
 #### How to install OpenCV on computers that support camera feed: ####
