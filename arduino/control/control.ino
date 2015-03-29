@@ -330,6 +330,7 @@ void doStoredCommands() {
 
 void respond() {
   if (response) {
+    Serial.write(cmd);
     Serial.write(response);
   }
   response = 0x00;
