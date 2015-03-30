@@ -69,4 +69,4 @@ class Postprocessing(object):
             self._vectors[key]['time'] = self._time
             return Vector(info['x'], info['y'], info['angle'], velocity)
         else:
-            return deepcopy(self._vectors[key]['vec'])
+            return Vector(0, 0, 0, 0)

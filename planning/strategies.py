@@ -344,6 +344,10 @@ class BouncePass(BaseStrategy):
         return "Bounce Pass"
 
     def execute(self):
+        # if the attacker robot is off the field, try to shoot
+        if self.world.our_attacker.x == 0 and self.world.our_attacker.y == 0:
+            return ShootAtGoal(self.world, self.comms_manager)
+
         if self.world.our_defender.caught_area.isInside(self.world.ball.x, self.world.ball.y):
             if self.state == "kicking":
                 self.comms_manager.kick()
@@ -384,3 +388,68 @@ class BouncePass(BaseStrategy):
                     self.world.our_defender.catcher = "open"
                     self.state = "kicking"
         return self
+
+
+class ShootAtGoal(BaseStrategy):
+    def __init__(self, world, comms_manager):
+        super(ShootAtGoal, self).__init__(world, comms_manager)
+        self.state = "aligning"
+        self.time = None
+        self.point = None
+        self.bounce = False
+
+    def __repr__(self):
+        return "Shoot At Goal"
+
+    def execute(self):
+        if self.world.our_attacker.x or self.world.our_attacker.y:
+            return BouncePass(self.world, self.comms_manager)
+
+        if self.state == "passed":
+
+            if self.time + 1 < time.clock():
+                return Intercept(self.world, self.comms_manager)
+            else:
+                return self
+
+        if self.world.our_defender.caught_area.isInside(self.world.ball.x, self.world.ball.y):
+            if self.state == "kicking":
+                self.comms_manager.kick()
+                self.state = "passed"
+                self.time = time.clock()
+                return self
+
+        if not self.world.our_defender.has_ball(self.world.ball):
+            return GoToBall(self.world, self.comms_manager)
+
+        if not self.point:
+            self.point = centre_of_zone(self.world, self.world.our_defender)
+            if self.world.their_attacker.y > self.world.pitch.height / 2:
+                self.point = (self.point[0], self.point[1] - 50)
+            else:
+                self.point = (self.point[0], self.point[1] + 50)
+
+        if self.move_to_point(self.point):
+            return self
+
+        angle = self.world.our_defender.get_rotation_to_point(*centre_of_zone(self.world, self.world.their_defender))
+        if self.world.our_defender.y > self.world.pitch.height / 2:
+            if self.world.their_attacker.y > self.world.pitch.height * 2 / 3 or self.bounce:
+                angle = self.world.our_defender.get_rotation_to_point(self.world.pitch.width / 2, 0)
+                self.bounce = True
+
+        else:
+            if self.world.their_attacker.y < self.world.pitch.height / 3 or self.bounce:
+                angle = self.world.our_defender.get_rotation_to_point(self.world.pitch.width / 2, self.world.pitch.height)
+                self.bounce = True
+
+        if not self.send_correct_turn(angle, AIMING_THRESHOLD):
+            self.comms_manager.stop()
+            if abs(self.world.our_defender.radial_velocity) < 0.1:
+                self.comms_manager.open_grabber()
+                self.world.our_defender.catcher = "open"
+                self.state = "kicking"
+        return self
+
+
+
