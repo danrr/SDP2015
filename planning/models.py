@@ -188,6 +188,7 @@ class Robot(PitchObject):
         self._catcher = 'closed'
         self.old_angles = None
         self.radial_velocity = 0
+        self.lost = False
 
     @property
     def zone(self):

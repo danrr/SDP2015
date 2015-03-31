@@ -115,7 +115,7 @@ class Controller:
 
                 # ###################### PLANNING ########################
                 # Find appropriate action
-                self.strategy.update_world(model_positions)
+                self.strategy.update_world(model_positions, self.postprocessing.attacker_lost)
                 self.strategy = self.strategy.execute()
 
                 # Information about the grabbers from the world
