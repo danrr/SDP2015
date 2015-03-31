@@ -559,7 +559,7 @@ void startCloseGrabber(byte data) {
     } 
     else if (data == 2) {
       // Close right grabber first
-      motorForward(_LEFT_GRABBER, 50);
+      motorForward(_LEFT_GRABBER, 40);
       motorBackward(_RIGHT_GRABBER, 100);
     }
     else {
