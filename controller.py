@@ -136,7 +136,7 @@ class Controller:
                 # Draw vision content and actions
                 self.GUI.draw(
                     frame, model_positions, regular_positions, fps,
-                    defender_state, grabbers,
+                    defender_state, grabbers, counter,
                     our_color=self.color, our_side=self.side, key=c, preprocess=pre_options)
                 counter += 1
 

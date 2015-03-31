@@ -8,7 +8,7 @@ import numpy as np
 from findHSV import CalibrationGUI
 from collections import deque
 from Polygon.cPolygon import Polygon
-
+from random import randint
 
 TEAM_COLORS = set(['yellow', 'blue'])
 SIDES = ['left', 'right']
@@ -283,6 +283,41 @@ class Camera(object):
     def get_adjusted_center(self):
         return 320 - self.crop_values[0], 240 - self.crop_values[2]
 
+class Calibrate(object):
+    CONTROLS = ["LH", "UH", "LS", "US", "LV", "UV", "CT", "BL"]
+    def __init__(self, calibration_gui, jitterQueue):
+        self.calibration_gui = calibration_gui
+        self.values = [(self.calibration_gui.get_trackbar_positions(), sum(jitterQueue))]
+        self.descentPoint = 0
+        self.setting = "LH"
+        self.direction = -1
+        self.alpha = 1
+
+    def __del__(self):
+        self.values = None
+
+    def update(self, jitterQueue):
+        jitterValue = sum(jitterQueue)
+        if self.values[self.descentPoint][1] > jitterValue:
+            values = self.values[len(self.values)-1][0]
+            self.descentPoint = len(self.values)
+            values[self.setting] += self.direction*self.alpha
+            self.values.append((values, self.jitterValue))
+        elif self.values[self.descentPoint][1] < jitterValue:
+            self.values.append(self.values[self.descentPoint])
+            self.descentPoint = len(self.values)
+            if self.direction > 0:
+                self.setting = self.get_next_setting(self.setting)
+                self.direction = -1
+            else:
+                self.direction = 1
+        print self.values
+        self.calibration_gui.set_trackbar_positions(self.values[len(self.values)-1][0])
+
+    def get_next_setting(self, currentSetting):
+        index = CONTROLS.index(currentSetting)
+        return CONTROLS[index+1]
+
 
 class GUI(object):
     VISION = 'SUCH VISION'
@@ -290,6 +325,7 @@ class GUI(object):
     NORMALIZE = 'Normalize  '
     COMMS = 'Communications on/off '
     CALIB_LOOP = 'Calibration Loop'
+    CALIBRATE = 'Calibrate'
 
     def nothing(self, x):
         pass
@@ -302,6 +338,8 @@ class GUI(object):
         self.capture = capture
         # identifies whteher we are using loop or real video feed
         self.calibration_loop = False
+        self.calibrator = None
+        self.can_see_all = False
 
         cv2.namedWindow(self.VISION)
 
@@ -312,8 +350,9 @@ class GUI(object):
         cv2.createTrackbar(
             self.COMMS, self.VISION, self.arduino.comms, 1, lambda x: self.arduino.setComms(x))
         cv2.createTrackbar(self.CALIB_LOOP, self.VISION, 0, 1, lambda x: self.set_calibration_loop(x))
+        cv2.createTrackbar(self.CALIBRATE, self.VISION, 0, 1, lambda x: self.calibrate(x))
         # 20 zeroes, arbitrary number
-        self.jitterQueue = deque([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        self.jitterQueue = deque([0, 0, 0, 0, 0])
 
     @staticmethod
     def to_info(args):
@@ -353,8 +392,9 @@ class GUI(object):
                     self.jitterQueue.append(abs(info.velocity))
                     self.jitterQueue.popleft()
 
+
     def draw(self, frame, model_positions, regular_positions, fps,
-             dState, grabbers, our_color, our_side,
+             dState, grabbers, frameNo, our_color, our_side,
              key=None, preprocess=None):
         """
         Draw information onto the GUI given positions from the vision and post processing.
@@ -390,20 +430,20 @@ class GUI(object):
         for jitterFrame in self.jitterQueue:
             jitterFactor += jitterFrame
         # indicates whether we can see all robots
-        can_see_all = True
+        self.can_see_all = True
         for key in ['our_defender', 'our_attacker', 'their_defender', 'their_attacker']:
             for label in regular_positions[key]:
                 # if some of box direction angle is none we cant see the plate
                 if regular_positions[key][label] is None:
-                    can_see_all = False
+                    self.can_see_all = False
                 # check if the box is of a reasonable size
                 elif label == 'box':
                     area = Polygon(regular_positions[key][label]).area()
                     # guessed reasonable number
                     if area < 60:
-                        can_see_all = False
+                        self.can_see_all = False
 
-        if can_see_all:
+        if self.can_see_all:
             self.draw_text(frame, '%.1f JITTERS' % jitterFactor, 415, 15, BGR_COMMON['green'], thickness=1.5, size=0.4)
         else:
             self.draw_text(frame, 'CANT SEE', 415, 15, BGR_COMMON['red'], thickness=1.5, size=0.4)
@@ -435,6 +475,10 @@ class GUI(object):
                         model_positions[key].angle, model_positions[key].velocity)
 
         cv2.imshow(self.VISION, frame_with_blank)
+
+        if frameNo % 5 == 0 and self.calibrator:
+            self.calibrator.update(self.jitterQueue)
+
 
     def draw_zones(self, frame, width, height):
         # Re-initialize zones in case they have not been initalized
@@ -560,8 +604,12 @@ class GUI(object):
             while i != 20:
                 ret, frame = self.capture.read()
                 cv2.imwrite('img/test' + str(i) + '.jpg', frame)
-                i += 1
 
+    def calibrate(self, value):
+        if value:
+            self.calibrator = Calibrate(self.calibration_gui, self.jitterQueue)
+        elif self.calibrator:
+            del self.calibrator
 
 if __name__ == '__main__':
     tableNumber = 0

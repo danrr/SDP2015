@@ -69,12 +69,7 @@ class CalibrationGUI(object):
             except:
                 pass
 
-        getTrackbarPos = lambda setting: cv2.getTrackbarPos(setting, self.maskWindowName)
-
-        values = {}
-        for setting in CONTROLS:
-            values[setting] = float(getTrackbarPos(setting))
-        values['BL'] = int(values['BL'])
+        values = self.get_trackbar_positions()
 
         self.calibration[self.color]['min'] = np.array([values['LH'], values['LS'], values['LV']])
         self.calibration[self.color]['max'] = np.array([values['UH'], values['US'], values['UV']])
@@ -101,3 +96,13 @@ class CalibrationGUI(object):
         frame_mask = cv2.inRange(frame_hsv, min_color, max_color)
 
         return frame_mask
+
+    def set_trackbar_positions(self, values):
+        for setting in CONTROLS:
+            cv2.setTrackbarPos(setting, self.maskWindowName, int(values[setting]))
+
+    def get_trackbar_positions(self):
+        values = {}
+        for setting in CONTROLS:
+            values[setting] = float(cv2.getTrackbarPos(setting, self.maskWindowName))
+        return values
