@@ -284,10 +284,10 @@ class Camera(object):
         return 320 - self.crop_values[0], 240 - self.crop_values[2]
 
 class Calibrate(object):
-    CONTROLS = ["LH", "UH", "LS", "US", "LV", "UV", "CT", "BL"]
     def __init__(self, calibration_gui, jitterQueue):
         self.calibration_gui = calibration_gui
         self.values = [(self.calibration_gui.get_trackbar_positions(), sum(jitterQueue))]
+        self.colour = self.calibration_gui.color
         self.descentPoint = 0
         self.setting = "LH"
         self.direction = -1
@@ -298,25 +298,37 @@ class Calibrate(object):
 
     def update(self, jitterQueue):
         jitterValue = sum(jitterQueue)
+        if self.colour != self.calibration_gui.color:
+            self.values = [(self.calibration_gui.get_trackbar_positions(), sum(jitterQueue))]
+            self.colour = self.calibration_gui.color
+            self.descentPoint = 0
+            self.setting = "LH"
+            self.direction = -1
+            self.alpha = 1
+            return
+
+        values = self.calibration_gui.get_trackbar_positions()
         if self.values[self.descentPoint][1] > jitterValue:
             values = self.values[len(self.values)-1][0]
             self.descentPoint = len(self.values)
             values[self.setting] += self.direction*self.alpha
-            self.values.append((values, self.jitterValue))
         elif self.values[self.descentPoint][1] < jitterValue:
-            self.values.append(self.values[self.descentPoint])
+            values = self.values[self.descentPoint][0]
             self.descentPoint = len(self.values)
             if self.direction > 0:
                 self.setting = self.get_next_setting(self.setting)
                 self.direction = -1
             else:
                 self.direction = 1
-        print self.values
-        self.calibration_gui.set_trackbar_positions(self.values[len(self.values)-1][0])
+        print values
+        self.values.append((values, jitterValue))
+        self.calibration_gui.set_trackbar_positions(values)
 
     def get_next_setting(self, currentSetting):
+        CONTROLS = ["LH", "UH", "LS", "US", "LV", "UV", "CT", "BL"]
+
         index = CONTROLS.index(currentSetting)
-        return CONTROLS[index+1]
+        return CONTROLS[(index+1) % 8]
 
 
 class GUI(object):
@@ -609,7 +621,7 @@ class GUI(object):
         if value:
             self.calibrator = Calibrate(self.calibration_gui, self.jitterQueue)
         elif self.calibrator:
-            del self.calibrator
+            self.calibrator = None
 
 if __name__ == '__main__':
     tableNumber = 0
