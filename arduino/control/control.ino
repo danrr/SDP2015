@@ -408,7 +408,7 @@ void setRotationalSpeed(int target) {
   if (turnPower > 10) {
     motorBackward(_LEFT_DRIVE, turnPower);
     motorBackward(_RIGHT_DRIVE, turnPower);
-    motorBackward(_BACK_DRIVE, 30);
+    motorBackward(_BACK_DRIVE, 10);
   }
   else if (turnPower < -10) {
     motorForward(_LEFT_DRIVE, -turnPower);
