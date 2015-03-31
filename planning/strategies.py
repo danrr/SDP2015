@@ -89,6 +89,66 @@ class BaseStrategy(object):
             self.comms_manager.strafe_left(100)
             return True
         return False
+        
+    def get_shot_target(self):
+        """
+        Get the shot target. Ultimately we want to ball to go into the goal
+        1/5 * goal_width from either side. If there is a robot between ourselves
+        and the straightforward shot (far corner) then we will bounce shot off
+        of the closeby wall into the closeby corner of the goal.
+        """
+        our_center_x, our_center_y = self.world.pitch.zones[self.world.our_robot.zone].center()
+
+        zone = self.world.pitch.zones[self.world.our_robot.zone]
+        zone_height = zone.center()[1]*2
+
+        upper_tgt = self.world.their_goal.x, self.world.their_goal.y + self.world.their_goal.height * (4/10.0)
+        lower_tgt = self.world.their_goal.x, self.world.their_goal.y - self.world.their_goal.height * (4/10.0)
+
+        if self.world.our_robot.y > our_center_y:
+            # Check straight shot
+            straight_shot_poly = Polygon([lower_tgt, (self.world.our_robot.x, self.world.our_robot.y-5), (self.world.our_robot.x, self.world.our_robot.y+5)])
+
+            if not straight_shot_poly.overlaps(self.world.their_defender.get_polygon()):
+                return lower_tgt
+            else:  # Bounce shot
+
+                return self.target_via_wall(upper_tgt[0], upper_tgt[1])
+        else:
+            straight_shot_poly = Polygon([upper_tgt, (self.world.our_robot.x, self.world.our_robot.y), (self.world.our_robot.x, self.world.our_robot.y+5)])
+
+            if not straight_shot_poly.overlaps(self.world.their_defender.get_polygon()):
+                return upper_tgt
+            else:  # Bounce shot
+                return self.target_via_wall(lower_tgt[0], lower_tgt[1], False)
+
+   def rotation_to_point_via_wall(self, x, y, top=True):
+        """
+        Get the angle by which the robot needs to rotate in order to look at the
+        target WALL-BOUNCE PASS EDITION
+        x = target x-pos
+        y = target y-pos
+        top = pass via bottom wall or top wall (true = top)
+        """
+        zone_height = self.world.pitch.zones[self._zone].center()[1]*2
+        (_, y_mirror) = self.target_via_wall(x, y, zone_height, top)
+        
+        return self.world.our_robot.get_rotation_to_point(x, y_mirror)
+
+    def target_via_wall(self, x, y, top=True):
+        """
+        Given a target, return the point at which we should shoot
+        to have the ball bounce and reach the target.
+        """
+        margin_bottom = 31 # assume magic 20 pixels on bottom of pitch
+        zone_height = self.world.pitch.zones[self._zone].center()[1]*2
+
+        if top:
+            y_mirror = y + 2*(zone_height - 1.5*margin_bottom - y)
+        else:
+            y_mirror = -y + (margin_bottom*3)
+
+        return x, y_mirror
 
 
 class Init(BaseStrategy):
