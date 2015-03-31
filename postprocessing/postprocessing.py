@@ -13,6 +13,7 @@ class Postprocessing(object):
         self._vectors['our_defender'] = {'vec': Vector(0, 0, 0, 0), 'time': 0}
         self._vectors['their_defender'] = {'vec': Vector(0, 0, 0, 0), 'time': 0}
         self._time = 0
+        self.attacker_lost = False
 
     def analyze(self, vector_dict):
         '''
@@ -67,6 +68,10 @@ class Postprocessing(object):
 
             self._vectors[key]['vec'] = Vector(info['x'], info['y'], info['angle'], velocity)
             self._vectors[key]['time'] = self._time
+            if key == "our_attacker":
+                self.attacker_lost = False
             return Vector(info['x'], info['y'], info['angle'], velocity)
         else:
-            return Vector(0, 0, 0, 0)
+            if key == "our_attacker":
+                self.attacker_lost = True
+            return deepcopy(self._vectors[key]['vec'])

@@ -21,8 +21,11 @@ class BaseStrategy(object):
     def execute(self):
         raise NotImplementedError
 
-    def update_world(self, position_dictionary):
+    def update_world(self, position_dictionary, attacker_lost):
         self.world.update_positions(position_dictionary)
+        self.world.our_attacker.lost = attacker_lost
+        # self.world.our_attacker.lost = True
+
 
     def send_correct_strafe(self, distance):
         if abs(distance) < DISTANCE_THRESHOLD:
@@ -345,7 +348,7 @@ class BouncePass(BaseStrategy):
 
     def execute(self):
         # if the attacker robot is off the field, try to shoot
-        if self.world.our_attacker.x == 0 and self.world.our_attacker.y == 0:
+        if self.world.our_attacker.lost:
             return ShootAtGoal(self.world, self.comms_manager)
 
         if self.world.our_defender.caught_area.isInside(self.world.ball.x, self.world.ball.y):
@@ -402,7 +405,7 @@ class ShootAtGoal(BaseStrategy):
         return "Shoot At Goal"
 
     def execute(self):
-        if self.world.our_attacker.x or self.world.our_attacker.y:
+        if not self.world.our_attacker.lost:
             return BouncePass(self.world, self.comms_manager)
 
         if self.state == "passed":
