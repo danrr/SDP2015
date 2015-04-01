@@ -377,15 +377,15 @@ class BouncePass(BaseStrategy):
         # If not then turn 90 and pass
         if self.state == "aiming":
             if self.bounce_side:
-                if self.world.their_attacker.y > self.world.pitch.height / 3:
-                    self.bounce_side = "bottom"
-                elif self.world.their_attacker.y < self.world.pitch.height * 2 / 3:
+                if self.world.their_attacker.y < self.world.pitch.height / 3:
                     self.bounce_side = "top"
+                elif self.world.their_attacker.y > self.world.pitch.height * 2 / 3:
+                    self.bounce_side = "bottom"
             else:
                 if self.world.their_attacker.y > self.world.pitch.height / 2:
-                    self.bounce_side = "bottom"
-                else:
                     self.bounce_side = "top"
+                else:
+                    self.bounce_side = "bottom"
 
             if self.bounce_side == "bottom":
                 angle = self.world.our_defender.get_rotation_to_point(
