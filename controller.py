@@ -71,7 +71,7 @@ class Controller:
 
         # Set up initial strategy
         world = World(our_side=our_side, pitch_num=self.pitch)
-        cm_to_px = 3.3
+        cm_to_px = 3.7
         width = 18 * cm_to_px
         height = 9 * cm_to_px
         front_offset = 3.5 * cm_to_px
