@@ -26,11 +26,10 @@ class BaseStrategy(object):
         self.world.our_attacker.lost = attacker_lost
         # self.world.our_attacker.lost = True
 
-
-    def send_correct_strafe(self, distance):
+    def send_correct_strafe(self, distance, full_power=False):
         if abs(distance) < DISTANCE_THRESHOLD:
             return False
-        speed = self.calculate_speed(distance)
+        speed = self.calculate_speed(distance, strafe=True) if not full_power else 100
 
         if distance < 0 and self.world._our_side == "left" \
                 or distance > 0 and self.world._our_side == "right":
@@ -72,12 +71,14 @@ class BaseStrategy(object):
                                                                                    self.world.ball.y))
 
     @staticmethod
-    def calculate_speed(distance):
-        speed = 40 + abs(distance)/2 if distance <= 80 else 80
-        return max(int(10 * round(speed / 10)), 40)
+    def calculate_speed(distance, strafe=False):
+        top_speed = 100 if strafe else 80
+        speed = 40 + abs(distance)/2 if distance <= top_speed else top_speed
+        speed = max(int(10 * round(speed / 10)), 40)
+        return speed
 
     def get_bounded_ball_y(self, full_width=False):
-        top_y = self.world._pitch.height - 60 if full_width \
+        top_y = self.world.pitch.height - 60 if full_width \
             else self.world.our_goal.y + (self.world.our_goal.width / 2) - 30
         bottom_y = 60 if full_width else \
             self.world.our_goal.y - (self.world.our_goal.width / 2) + 30
@@ -237,15 +238,18 @@ class Intercept(BaseStrategy):
                 return self
 
             predicted_y = None
+            intercepting_ball = False
             # if the ball is moving fast move to intercept
             if self.world.ball.velocity > BALL_VELOCITY:
                 predicted_y = predict_y_intersection(self.world,
                                                      self.world.our_defender.x,
                                                      self.world.ball,
                                                      bounce=True)
-                if predicted_y and self.world.our_defender.catcher == "closed" and self.in_our_half():
-                    self.comms_manager.open_grabber()
-                    self.world.our_defender.catcher = "open"
+                if predicted_y:
+                    intercepting_ball = True
+                    if self.world.our_defender.catcher == "closed" and self.in_our_half():
+                        self.comms_manager.open_grabber()
+                        self.world.our_defender.catcher = "open"
 
             # if the ball is moving slowly or not at all, attempt to block shots from attacker
             if self.world.ball.velocity <= BALL_VELOCITY or predicted_y is None:
@@ -264,7 +268,7 @@ class Intercept(BaseStrategy):
 
             distance_to_move = self.world.our_defender.y - predicted_y
 
-            if self.send_correct_strafe(distance_to_move):
+            if self.send_correct_strafe(distance_to_move, full_power=intercepting_ball):
                 self.state = "strafing"
                 return self
             else:
@@ -371,15 +375,20 @@ class BouncePass(BaseStrategy):
         if not self.world.our_defender.has_ball(self.world.ball):
             return GoToBall(self.world, self.comms_manager)
 
-        # if self.state == "aligning":
         centre = centre_of_zone(self.world, self.world.our_defender)
-        if not self.move_to_point(centre):
-            self.state = "aiming"
+        if self.state == "aligning":
+            if not self.move_to_point(centre):
+                self.state = "aiming"
                 
         # If the robot has a clear pass at the top of the pitch pass
         # If not then turn 90 and pass
         if self.state == "aiming":
+            if self.world.our_defender.get_displacement_to_point(*centre) > DISTANCE_THRESHOLD * 2:
+                self.state = "aligning"
+                return self
+
             if self.bounce_side:
+                print self.world.our_attacker.angle
                 if self.world.their_attacker.y < self.world.pitch.height / 3:
                     self.bounce_side = "top"
                 elif self.world.their_attacker.y > self.world.pitch.height * 2 / 3:
@@ -401,6 +410,7 @@ class BouncePass(BaseStrategy):
 
             if not self.send_correct_turn(angle, AIMING_THRESHOLD):
                 self.comms_manager.stop()
+                print "fuck this shit", angle, AIMING_THRESHOLD
                 if abs(self.world.our_defender.radial_velocity) < 0.1:
                     self.comms_manager.open_grabber()
                     self.world.our_defender.catcher = "open"
