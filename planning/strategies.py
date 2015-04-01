@@ -352,6 +352,9 @@ class BouncePass(BaseStrategy):
         if self.world.our_attacker.lost:
             return ShootAtGoal(self.world, self.comms_manager)
 
+        if self.move_away_from_wall():
+            return self
+
         if self.world.our_defender.caught_area.isInside(self.world.ball.x, self.world.ball.y):
             if self.state == "kicking":
                 self.comms_manager.kick()
@@ -368,10 +371,10 @@ class BouncePass(BaseStrategy):
         if not self.world.our_defender.has_ball(self.world.ball):
             return GoToBall(self.world, self.comms_manager)
 
-        if self.state == "aligning":
-            centre = centre_of_zone(self.world, self.world.our_defender)
-            if not self.move_to_point(centre):
-                self.state = "aiming"
+        # if self.state == "aligning":
+        centre = centre_of_zone(self.world, self.world.our_defender)
+        if not self.move_to_point(centre):
+            self.state = "aiming"
                 
         # If the robot has a clear pass at the top of the pitch pass
         # If not then turn 90 and pass
