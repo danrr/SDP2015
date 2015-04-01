@@ -256,7 +256,7 @@ class Intercept(BaseStrategy):
                 predicted_y = predict_y_intersection(self.world,
                                                      self.world.our_defender.x,
                                                      self.world.their_attacker,
-                                                     bounce=True)
+                                                     bounce=False)
 
                 if self.world.our_defender.catcher == "open":
                     self.comms_manager.close_grabber_center()
