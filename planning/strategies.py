@@ -342,7 +342,7 @@ class BouncePass(BaseStrategy):
         super(BouncePass, self).__init__(world, comms_manager)
         self.state = "aligning"
         self.time = None
-        self.bounce_side = "bottom"
+        self.bounce_side = None
 
     def __repr__(self):
         return "Bounce Pass"
@@ -376,10 +376,16 @@ class BouncePass(BaseStrategy):
         # If the robot has a clear pass at the top of the pitch pass
         # If not then turn 90 and pass
         if self.state == "aiming":
-            if self.world.their_attacker.y > self.world.pitch.height / 3:
-                self.bounce_side = "bottom"
-            elif self.world.their_attacker.y < self.world.pitch.height * 2 / 3:
-                self.bounce_side = "top"
+            if self.bounce_side:
+                if self.world.their_attacker.y > self.world.pitch.height / 3:
+                    self.bounce_side = "bottom"
+                elif self.world.their_attacker.y < self.world.pitch.height * 2 / 3:
+                    self.bounce_side = "top"
+            else:
+                if self.world.their_attacker.y > self.world.pitch.height / 2:
+                    self.bounce_side = "bottom"
+                else:
+                    self.bounce_side = "top"
 
             if self.bounce_side == "bottom":
                 angle = self.world.our_defender.get_rotation_to_point(
