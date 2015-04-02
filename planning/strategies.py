@@ -73,7 +73,7 @@ class BaseStrategy(object):
     @staticmethod
     def calculate_speed(distance, strafe=False):
         top_speed = 100 if strafe else 80
-        speed = 40 + abs(distance)/2 if distance <= top_speed else top_speed
+        speed = 40 + abs(distance) / 2 if distance <= top_speed else top_speed
         speed = max(int(10 * round(speed / 10)), 40)
         return speed
 
@@ -113,7 +113,7 @@ class BaseStrategy(object):
 
         if displacement > DISTANCE_THRESHOLD:
             coefficient = round(angle / (pi / 2))
-            target_angle = coefficient * (pi/2)
+            target_angle = coefficient * (pi / 2)
             angle_to_move = target_angle - angle
             if self.send_correct_turn(-angle_to_move, TURNING_THRESHOLD):
                 return True
@@ -333,7 +333,7 @@ class AimAndPass(BaseStrategy):
                 elif self.world.their_attacker.y > 2 * self.world.pitch.height / 3:
                     distance = self.world.pitch.height / 9 - self.world.our_defender.y
                 elif self.world.our_attacker.y > 2 * self.world.pitch.height / 3 or \
-                                self.world.our_attacker.y < 1 * self.world.pitch.height / 3:
+                        self.world.our_attacker.y < 1 * self.world.pitch.height / 3:
                     distance = self.world.our_attacker.y - self.world.our_defender.y
                 else:
                     distance = self.world.pitch.height / 9 - self.world.our_defender.y
@@ -478,6 +478,3 @@ class ShootAtGoal(BaseStrategy):
                 self.world.our_defender.catcher = "open"
                 self.state = "kicking"
         return self
-
-
-
