@@ -103,7 +103,6 @@ class BaseStrategy(object):
     def move_away_from_wall(self):
         if is_wall_in_front(self.world):
             self.comms_manager.move_backward(40)
-            self.state = "recovering"
             return True
         return False
 
@@ -388,7 +387,6 @@ class BouncePass(BaseStrategy):
                 return self
 
             if self.bounce_side:
-                print self.world.our_attacker.angle
                 if self.world.their_attacker.y < self.world.pitch.height / 3:
                     self.bounce_side = "top"
                 elif self.world.their_attacker.y > self.world.pitch.height * 2 / 3:
