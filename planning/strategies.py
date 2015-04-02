@@ -355,7 +355,7 @@ class BouncePass(BaseStrategy):
                 elif self.world.their_attacker.y > self.world.pitch.height * 2 / 3:
                     self.bounce_side = "bottom"
             else:
-                if self.world.their_attacker.y > self.world.pitch.height / 2:
+                if self.world.their_attacker.y < self.world.pitch.height / 2:
                     self.bounce_side = "top"
                 else:
                     self.bounce_side = "bottom"
