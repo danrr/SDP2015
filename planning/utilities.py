@@ -21,8 +21,8 @@ def predict_y_intersection(world, predict_for_x, robot, full_width=False, bounce
     """
     x = robot.x
     y = robot.y
-    top_y = world.pitch.height - 60 if full_width else world.our_goal.y + (world.our_goal.width / 2) - 30
-    bottom_y = 60 if full_width else world.our_goal.y - (world.our_goal.width / 2) + 30
+    top_y = world.pitch.height - 60 if full_width else world.our_goal.y + (world.our_goal.width / 2) - 15
+    bottom_y = 60 if full_width else world.our_goal.y - (world.our_goal.width / 2) + 15
     angle = robot.angle + angle_to_turn
     if (robot.x < predict_for_x and not (pi / 2 < angle < 3 * pi / 2)) or \
             (robot.x > predict_for_x and (3 * pi / 2 > angle > pi / 2)):
