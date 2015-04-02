@@ -247,9 +247,6 @@ class Intercept(BaseStrategy):
                                                      bounce=True)
                 if predicted_y:
                     intercepting_ball = True
-                    if self.world.our_defender.catcher == "closed" and self.in_our_half():
-                        self.comms_manager.open_grabber()
-                        self.world.our_defender.catcher = "open"
 
             # if the ball is moving slowly or not at all, attempt to block shots from attacker
             if self.world.ball.velocity <= BALL_VELOCITY or predicted_y is None:
@@ -270,7 +267,6 @@ class Intercept(BaseStrategy):
 
             if self.send_correct_strafe(distance_to_move, full_power=intercepting_ball):
                 self.state = "strafing"
-                return self
             else:
                 # move to be closer to an ideal distance from goal if we don't need to intercept ball
                 if abs(disp) > DISTANCE_THRESHOLD:
@@ -282,6 +278,9 @@ class Intercept(BaseStrategy):
                 else:
                     self.comms_manager.stop()
 
+        if intercepting_ball and self.world.our_defender.catcher == "closed" and self.in_our_half():
+            self.comms_manager.open_grabber()
+            self.world.our_defender.catcher = "open"
         return self
 
 
