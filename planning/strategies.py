@@ -165,7 +165,7 @@ class GoToBall(BaseStrategy):
 
         if self.world.our_defender.catcher == "closed":
             # move back if the ball is in the catcher area
-            if self.world.our_defender.can_catch_ball(self.world.ball):
+            if self.world.our_defender.ball_in_front_catcher(self.world.ball):
                 self.comms_manager.move_backward(40)
                 return self
             elif not self.world.our_defender.ball_behind_catcher(self.world.ball):

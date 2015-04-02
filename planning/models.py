@@ -250,6 +250,38 @@ class Robot(PitchObject):
         return self._catcher
 
     @property
+    def phat_catcher_area_left(self):
+        cm_to_px = self._catcher_area['cm_to_px']
+
+        c1 = Circle((7 * cm_to_px), (self.x + self._catcher_area['front_offset'], self.y + (3.7 * cm_to_px)), 32)
+        point1 = (self.x + self._catcher_area['front_offset'], self.y + (9.3 * cm_to_px))
+        point2 = (self.x + self._catcher_area['front_offset'], self.y - (2.5 * cm_to_px))
+        point3 = (self.x + self._catcher_area['front_offset'] + (10.3 * cm_to_px), self.y - (2.5 * cm_to_px))
+        point4 = (self.x + self._catcher_area['front_offset'] + (10.3 * cm_to_px), self.y + (9.3 * cm_to_px))
+        square = Polygon((point1, point2, point3, point4))
+        area = c1 & square
+        area.rotate(self.angle, self.x, self.y)
+        return area
+
+    @property
+    def phat_catcher_area_right(self):
+        cm_to_px = self._catcher_area['cm_to_px']
+
+        c1 = Circle((7 * cm_to_px), (self.x + self._catcher_area['front_offset'], self.y - (3.7 * cm_to_px)), 32)
+        point1 = (self.x + self._catcher_area['front_offset'], self.y - (9.3 * cm_to_px))
+        point2 = (self.x + self._catcher_area['front_offset'], self.y + (2.5 * cm_to_px))
+        point3 = (self.x + self._catcher_area['front_offset'] + (10.3 * cm_to_px), self.y + (2.5 * cm_to_px))
+        point4 = (self.x + self._catcher_area['front_offset'] + (10.3 * cm_to_px), self.y - (9.3 * cm_to_px))
+        square = Polygon((point1, point2, point3, point4))
+        area = c1 & square
+        area.rotate(self.angle, self.x, self.y)
+        return area
+
+    @property
+    def phat_catcher_area(self):
+        return self.phat_catcher_area_left | self.phat_catcher_area_right
+
+    @property
     def caught_area(self):
         cm_to_px = self._catcher_area['cm_to_px']
         point1 = (self.x + self._catcher_area['front_offset'] - (7 * cm_to_px), self.y + (3.8 * cm_to_px))
@@ -296,6 +328,12 @@ class Robot(PitchObject):
             return 'right'
         else:
             return None
+
+    def ball_in_front_catcher(self, ball):
+        area = self.phat_catcher_area
+        if area.isInside(ball.x, ball.y):
+            return True
+        return False
 
     def ball_behind_catcher(self, ball):
         area = self.area_behind_catcher
