@@ -250,6 +250,17 @@ class Robot(PitchObject):
         return self._catcher
 
     @property
+    def front_area(self):
+        cm_to_px = self._catcher_area['cm_to_px']
+        point1 = (self.x + self._catcher_area['front_offset'], self.y + (5 * cm_to_px))
+        point2 = (self.x + self._catcher_area['front_offset'], self.y - (5 * cm_to_px))
+        point3 = (self.x + self._catcher_area['front_offset'] + (6 * cm_to_px), self.y - (5 * cm_to_px))
+        point4 = (self.x + self._catcher_area['front_offset'] + (6 * cm_to_px), self.y + (5 * cm_to_px))
+        area = Polygon((point1, point2, point3, point4))
+        area.rotate(self.angle, self.x, self.y)
+        return area
+
+    @property
     def caught_area(self):
         cm_to_px = self._catcher_area['cm_to_px']
         point1 = (self.x + self._catcher_area['front_offset'] - (7 * cm_to_px), self.y + (3.8 * cm_to_px))

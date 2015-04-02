@@ -49,11 +49,9 @@ def is_wall_in_front(world):
     """
     robot = world.our_defender
     zone = world.pitch.zones[world.our_defender.zone] | world.pitch.zones[world.their_attacker.zone]
-    grabber_area = robot.catcher_area_left & robot.catcher_area_right
-    outside_polygon = (zone | grabber_area) - zone
-    outside_area = int(outside_polygon.area())
 
-    return outside_area != 0
+    print zone.covers(robot.front_area)
+    return not zone.covers(robot.front_area)
 
 
 def centre_of_zone(world, robot):
