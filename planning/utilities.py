@@ -49,13 +49,9 @@ def is_wall_in_front(world):
     """
     robot = world.our_defender
     zone = world.pitch.zones[world.our_defender.zone] | world.pitch.zones[world.their_attacker.zone]
-    if robot.catcher == 'closed':
-        grabber_area = robot.phat_catcher_area_left & robot.phat_catcher_area_right
-    else:
-        grabber_area = robot.phat_catcher_area_left | robot.phat_catcher_area_right
 
-    print zone.covers(grabber_area)
-    return not zone.covers(grabber_area)
+    print zone.covers(robot.front_area)
+    return not zone.covers(robot.front_area)
 
 
 def centre_of_zone(world, robot):
