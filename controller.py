@@ -1,6 +1,6 @@
 from planning.comms_manager import CommunicationsManager
 from planning.models import World
-from planning.strategies import Init
+from planning.strategies import Init, Penalty
 from vision.vision import Vision, Camera, GUI
 from postprocessing.postprocessing import Postprocessing
 from preprocessing.preprocessing import Preprocessing
@@ -20,7 +20,7 @@ class Controller:
     Primary source of robot control. Ties vision and planning together.
     """
 
-    def __init__(self, pitch, color, our_side, video_port=0, comm_port='/dev/ttyACM0', comms=1):
+    def __init__(self, pitch, color, our_side, video_port=0, comm_port='/dev/ttyACM0', comms=1, penalty=False):
         """
         Entry point for the SDP system.
 
@@ -80,7 +80,7 @@ class Controller:
                                            'front_offset': front_offset,
                                            'cm_to_px': cm_to_px}
 
-        self.strategy = Init(world, self.comms_manager)
+        self.strategy = Penalty(world, self.comms_manager) if penalty else Init(world, self.comms_manager)
 
     def main(self):
         """
@@ -223,6 +223,7 @@ if __name__ == '__main__':
     parser.add_argument("pitch", help="[0] Main pitch, [1] Secondary pitch")
     parser.add_argument("side", help="The side of our defender ['left', 'right'] allowed.")
     parser.add_argument("color", help="The color of our team - ['yellow', 'blue'] allowed.")
+    parser.add_argument("--penalty", help="If we are defending against penalties, defaults to false", action="store_true")
     # store_true translates -n or --nocomms to True value for comms argument
     parser.add_argument(
         "-n", "--nocomms", help="Disables sending commands to the robot.", action="store_true")
@@ -231,7 +232,7 @@ if __name__ == '__main__':
     # Based on nocomms value ( -n / --nocomms) turns off or on the communications for arduino
     if args.nocomms:
         c = Controller(
-            pitch=int(args.pitch), color=args.color, our_side=args.side, comms=0).main()
+            pitch=int(args.pitch), color=args.color, our_side=args.side, comms=0, penalty=args.penalty).main()
     else:
         c = Controller(
-            pitch=int(args.pitch), color=args.color, our_side=args.side).main()
+            pitch=int(args.pitch), color=args.color, our_side=args.side, penalty=args.penalty).main()

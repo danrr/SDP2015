@@ -439,3 +439,50 @@ class ShootAtGoal(BaseStrategy):
                 self.world.our_defender.catcher = "open"
                 self.state = "kicking"
         return self
+
+
+class Penalty(BaseStrategy):
+    def __init__(self, world, comms_manager):
+        super(Penalty, self).__init__(world, comms_manager)
+        self.state = "penalty"
+        self.our_goal = self.world.our_goal
+        # Find the point we want to align to.
+
+    def __repr__(self):
+        return "Penalty"
+
+    def execute(self):
+        angle = self.world.our_defender.get_rotation_to_point(self.world.our_defender.x, 0)
+
+        if self.send_correct_turn(angle, TURNING_THRESHOLD):
+            return self
+        else:
+            predicted_y = None
+            # if the ball is moving fast move to intercept
+            if self.world.ball.velocity > BALL_VELOCITY:
+                predicted_y = predict_y_intersection(self.world,
+                                                     self.world.our_defender.x,
+                                                     self.world.ball,
+                                                     bounce=True)
+            # if the ball is moving slowly or not at all, attempt to block shots from attacker
+            if self.world.ball.velocity <= BALL_VELOCITY or predicted_y is None:
+                predicted_y = predict_y_intersection(self.world,
+                                                     self.world.our_defender.x,
+                                                     self.world.their_attacker,
+                                                     bounce=False)
+            # if attacker is facing away move to ball y
+            if not predicted_y:
+                predicted_y = self.get_bounded_ball_y()
+
+            distance_to_move = self.world.our_defender.y - predicted_y
+            speed = self.calculate_speed(distance_to_move, strafe=True)
+            if abs(distance_to_move) < DISTANCE_THRESHOLD:
+                self.comms_manager.stop()
+                return self
+            if distance_to_move > 0:
+                self.comms_manager.move_forward(speed)
+            else:
+                self.comms_manager.move_backward(speed)
+
+        return self
+
