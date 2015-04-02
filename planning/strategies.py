@@ -303,62 +303,6 @@ class Intercept(BaseStrategy):
         return self
 
 
-class AimAndPass(BaseStrategy):
-    def __init__(self, world, comms_manager):
-        super(AimAndPass, self).__init__(world, comms_manager)
-        self.state = "aiming"
-        self.time = None
-
-    def __repr__(self):
-        return "Aim and Pass"
-
-    def execute(self):
-
-        if self.world.our_defender.caught_area.isInside(self.world.ball.x, self.world.ball.y):
-            if self.state == "kicking":
-                self.comms_manager.kick()
-                self.state = "passed"
-                self.time = time.clock()
-                return self
-
-        if self.state == "passed":
-            if self.time + 1 < time.clock():
-                return Intercept(self.world, self.comms_manager)
-            else:
-                return self
-
-        if not self.world.our_defender.has_ball(self.world.ball):
-            return GoToBall(self.world, self.comms_manager)
-
-        angle = self.world.our_defender.get_rotation_to_point(self.world.our_attacker.x,
-                                                              self.world.our_attacker.y)
-
-        # If the robot has a clear pass after turning by angle then pass
-        # If not then move somewhere else and pass
-        if not is_shot_blocked(self.world, angle):
-            if not self.send_correct_turn(angle, AIMING_THRESHOLD):
-                self.comms_manager.stop()
-                self.comms_manager.open_grabber()
-                self.world.our_defender.catcher = "open"
-                self.state = "kicking"
-        else:
-            # Align before strafing
-            angle_to_align = self.world.our_defender.get_rotation_to_point(self.world._pitch.width / 2,
-                                                                           self.world.our_defender.y)
-            if not self.send_correct_turn(angle_to_align, TURNING_THRESHOLD):
-                if self.world.their_attacker.y < self.world.pitch.height / 3:
-                    distance = 8 * self.world.pitch.height / 9 - self.world.our_defender.y
-                elif self.world.their_attacker.y > 2 * self.world.pitch.height / 3:
-                    distance = self.world.pitch.height / 9 - self.world.our_defender.y
-                elif self.world.our_attacker.y > 2 * self.world.pitch.height / 3 or \
-                        self.world.our_attacker.y < 1 * self.world.pitch.height / 3:
-                    distance = self.world.our_attacker.y - self.world.our_defender.y
-                else:
-                    distance = self.world.pitch.height / 9 - self.world.our_defender.y
-                self.send_correct_strafe(-distance)
-        return self
-
-
 class BouncePass(BaseStrategy):
     def __init__(self, world, comms_manager):
         super(BouncePass, self).__init__(world, comms_manager)
