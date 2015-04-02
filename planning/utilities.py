@@ -49,8 +49,7 @@ def is_wall_in_front(world):
     """
     robot = world.our_defender
     zone = world.pitch.zones[world.our_defender.zone] | world.pitch.zones[world.their_attacker.zone]
-
-    print zone.covers(robot.front_area)
+    
     return not zone.covers(robot.front_area)
 
 

@@ -9,6 +9,7 @@ AIMING_THRESHOLD = pi / 27
 STRAFING_THRESHOLD = pi / 4
 TURNING_THRESHOLD = pi / 10
 FULL_TURN_THRESHOLD = pi - pi / 60
+COEFFICIENT_THRESHOLD = pi / 9
 
 
 class BaseStrategy(object):
@@ -17,6 +18,7 @@ class BaseStrategy(object):
         self.comms_manager = comms_manager
         self.goal_line = self.world.our_goal.x + GOAL_ALIGN_OFFSET * (1 if self.world._our_side == "left" else -1)
         self.turning_flag = 0
+        self.previous_coefficient = None
 
     def execute(self):
         raise NotImplementedError
@@ -111,7 +113,23 @@ class BaseStrategy(object):
         displacement = self.world.our_defender.get_displacement_to_point(*centre)
 
         if displacement > DISTANCE_THRESHOLD:
-            coefficient = round(angle / (pi / 2))
+            if self.previous_coefficient:
+                previous_angle = self.previous_coefficient * pi / 2
+                delta_angle = previous_angle - angle
+                # bring angle into first circle
+                if delta_angle > pi:
+                    delta_angle -= 2 * pi
+                elif delta_angle < -pi:
+                    delta_angle += 2 * pi
+
+                # fudge thresholds
+                if -pi /2 < delta_angle < pi / 2:
+                    if delta_angle > 0:
+                        angle += COEFFICIENT_THRESHOLD
+                    else:
+                        angle -= COEFFICIENT_THRESHOLD
+
+            self.previous_coefficient = coefficient = round(angle / (pi / 2))
             target_angle = coefficient * (pi / 2)
             angle_to_move = target_angle - angle
             if self.send_correct_turn(-angle_to_move, TURNING_THRESHOLD):
@@ -126,6 +144,7 @@ class BaseStrategy(object):
             else:
                 self.comms_manager.strafe_right(speed)
             return True
+        self.previous_coefficient = None
         self.comms_manager.stop()
         return False
 
