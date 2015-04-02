@@ -410,7 +410,6 @@ class BouncePass(BaseStrategy):
 
             if not self.send_correct_turn(angle, AIMING_THRESHOLD):
                 self.comms_manager.stop()
-                print "fuck this shit", angle, AIMING_THRESHOLD
                 if abs(self.world.our_defender.radial_velocity) < 0.1:
                     self.comms_manager.open_grabber()
                     self.world.our_defender.catcher = "open"
