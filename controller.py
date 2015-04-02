@@ -124,6 +124,7 @@ class Controller:
                     'orange': self.strategy.world.our_defender.caught_area,
                     'black': self.strategy.world.our_defender.area_behind_catcher,
                     'teal': self.strategy.world.our_defender.phat_catcher_area,
+                    'white': self.strategy.world.pitch.zones[self.strategy.world.our_defender.zone]
                 }
 
                 # Information about states
