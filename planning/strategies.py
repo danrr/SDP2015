@@ -454,7 +454,7 @@ class Penalty(BaseStrategy):
     def execute(self):
         angle = self.world.our_defender.get_rotation_to_point(self.world.our_defender.x, 0)
 
-        if self.send_correct_turn(angle, TURNING_THRESHOLD):
+        if self.send_correct_turn(angle, AIMING_THRESHOLD):
             return self
         else:
             predicted_y = None
