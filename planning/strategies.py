@@ -291,6 +291,7 @@ class Intercept(BaseStrategy):
                 return self
             else:
                 # move to be closer to an ideal distance from goal if we don't need to intercept ball
+                self.state = "turning"
                 if abs(disp) > DISTANCE_THRESHOLD:
                     speed = self.calculate_speed(disp)
                     if disp < 0:
