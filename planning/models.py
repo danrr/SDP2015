@@ -253,11 +253,11 @@ class Robot(PitchObject):
     def phat_catcher_area_left(self):
         cm_to_px = self._catcher_area['cm_to_px']
 
-        c1 = Circle((7 * cm_to_px), (self.x + self._catcher_area['front_offset'], self.y + (3.7 * cm_to_px)), 32)
-        point1 = (self.x + self._catcher_area['front_offset'], self.y + (9.3 * cm_to_px))
+        c1 = Circle((7.7 * cm_to_px), (self.x + self._catcher_area['front_offset'], self.y + (3.7 * cm_to_px)), 32)
+        point1 = (self.x + self._catcher_area['front_offset'], self.y + (10 * cm_to_px))
         point2 = (self.x + self._catcher_area['front_offset'], self.y - (2.5 * cm_to_px))
-        point3 = (self.x + self._catcher_area['front_offset'] + (10.3 * cm_to_px), self.y - (2.5 * cm_to_px))
-        point4 = (self.x + self._catcher_area['front_offset'] + (10.3 * cm_to_px), self.y + (9.3 * cm_to_px))
+        point3 = (self.x + self._catcher_area['front_offset'] + (11 * cm_to_px), self.y - (2.5 * cm_to_px))
+        point4 = (self.x + self._catcher_area['front_offset'] + (11 * cm_to_px), self.y + (10 * cm_to_px))
         square = Polygon((point1, point2, point3, point4))
         area = c1 & square
         area.rotate(self.angle, self.x, self.y)
@@ -267,11 +267,11 @@ class Robot(PitchObject):
     def phat_catcher_area_right(self):
         cm_to_px = self._catcher_area['cm_to_px']
 
-        c1 = Circle((7 * cm_to_px), (self.x + self._catcher_area['front_offset'], self.y - (3.7 * cm_to_px)), 32)
-        point1 = (self.x + self._catcher_area['front_offset'], self.y - (9.3 * cm_to_px))
+        c1 = Circle((7.7 * cm_to_px), (self.x + self._catcher_area['front_offset'], self.y - (3.7 * cm_to_px)), 32)
+        point1 = (self.x + self._catcher_area['front_offset'], self.y - (10 * cm_to_px))
         point2 = (self.x + self._catcher_area['front_offset'], self.y + (2.5 * cm_to_px))
-        point3 = (self.x + self._catcher_area['front_offset'] + (10.3 * cm_to_px), self.y + (2.5 * cm_to_px))
-        point4 = (self.x + self._catcher_area['front_offset'] + (10.3 * cm_to_px), self.y - (9.3 * cm_to_px))
+        point3 = (self.x + self._catcher_area['front_offset'] + (11 * cm_to_px), self.y + (2.5 * cm_to_px))
+        point4 = (self.x + self._catcher_area['front_offset'] + (11 * cm_to_px), self.y - (10 * cm_to_px))
         square = Polygon((point1, point2, point3, point4))
         area = c1 & square
         area.rotate(self.angle, self.x, self.y)
