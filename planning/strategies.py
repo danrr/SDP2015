@@ -5,7 +5,7 @@ import time
 GOAL_ALIGN_OFFSET = 50
 BALL_VELOCITY = 3
 DISTANCE_THRESHOLD = 12
-AIMING_THRESHOLD = pi / 27
+AIMING_THRESHOLD = pi / 15
 STRAFING_THRESHOLD = pi / 4
 TURNING_THRESHOLD = pi / 10
 FULL_TURN_THRESHOLD = pi - pi / 60
@@ -75,8 +75,9 @@ class BaseStrategy(object):
     @staticmethod
     def calculate_speed(distance, strafe=False):
         top_speed = 100 if strafe else 80
-        speed = 40 + abs(distance) / 2 if distance <= top_speed else top_speed
-        speed = max(int(10 * round(speed / 10)), 40)
+        min_speed = 60 if strafe else 40
+        speed = min_speed + abs(distance) / 2 if distance <= top_speed else top_speed
+        speed = max(int(10 * round(speed / 10)), min_speed)
         return speed
 
     def get_bounded_ball_y(self, full_width=False):
@@ -322,13 +323,6 @@ class BouncePass(BaseStrategy):
         if self.move_away_from_wall():
             return self
 
-        if self.world.our_defender.caught_area.isInside(self.world.ball.x, self.world.ball.y):
-            if self.state == "kicking":
-                self.comms_manager.kick()
-                self.state = "passed"
-                self.time = time.clock()
-                return self
-
         if self.state == "passed":
             if self.time + 1 < time.clock():
                 return Intercept(self.world, self.comms_manager)
@@ -372,10 +366,12 @@ class BouncePass(BaseStrategy):
 
             if not self.send_correct_turn(angle, AIMING_THRESHOLD):
                 self.comms_manager.stop()
-                if abs(self.world.our_defender.radial_velocity) < 0.1:
+                if abs(self.world.our_defender.radial_velocity) < 0.2:
                     self.comms_manager.open_grabber()
                     self.world.our_defender.catcher = "open"
-                    self.state = "kicking"
+                    self.comms_manager.kick()
+                    self.state = "passed"
+                    self.time = time.clock()
         return self
 
 

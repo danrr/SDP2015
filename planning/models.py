@@ -201,7 +201,7 @@ class Robot(PitchObject):
         # each grabber is 6cm long
         cm_to_px = self._catcher_area['cm_to_px']
 
-        c1 = Circle((6.7 * cm_to_px), (self.x + self._catcher_area['front_offset'], self.y + (3.7 * cm_to_px)), 32)
+        c1 = Circle((6.4 * cm_to_px), (self.x + self._catcher_area['front_offset'], self.y + (3.7 * cm_to_px)), 32)
         point1 = (self.x + self._catcher_area['front_offset'], self.y + (9 * cm_to_px))
         point2 = (self.x + self._catcher_area['front_offset'], self.y - (2.5 * cm_to_px))
         point3 = (self.x + self._catcher_area['front_offset'] + (10 * cm_to_px), self.y - (2.5 * cm_to_px))
@@ -218,7 +218,7 @@ class Robot(PitchObject):
         # each grabber is 6cm long
         cm_to_px = self._catcher_area['cm_to_px']
 
-        c1 = Circle((6.7 * cm_to_px), (self.x + self._catcher_area['front_offset'], self.y - (3.7 * cm_to_px)), 32)
+        c1 = Circle((6.4 * cm_to_px), (self.x + self._catcher_area['front_offset'], self.y - (3.7 * cm_to_px)), 32)
         point1 = (self.x + self._catcher_area['front_offset'], self.y - (9 * cm_to_px))
         point2 = (self.x + self._catcher_area['front_offset'], self.y + (2.5 * cm_to_px))
         point3 = (self.x + self._catcher_area['front_offset'] + (10 * cm_to_px), self.y + (2.5 * cm_to_px))
