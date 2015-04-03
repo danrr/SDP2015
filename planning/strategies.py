@@ -75,7 +75,7 @@ class BaseStrategy(object):
     @staticmethod
     def calculate_speed(distance, strafe=False):
         top_speed = 100 if strafe else 80
-        min_speed = 60 if strafe else 40
+        min_speed = 50 if strafe else 40
         speed = min_speed + abs(distance) / 2 if distance <= top_speed else top_speed
         speed = max(int(10 * round(speed / 10)), min_speed)
         return speed
@@ -224,6 +224,8 @@ class Intercept(BaseStrategy):
         return "Intercept"
 
     def execute(self):
+        # TODO uncomment in emergency
+        # return Penalty(self.world, self.comms_manager).execute()
         if self.world.pitch.zones[self.world.our_defender.zone].isInside(self.world.ball.x, self.world.ball.y) and \
                 self.world.ball.velocity < BALL_VELOCITY:
             # ball is in our zone, and it's moving slowly, go and catch
@@ -448,6 +450,15 @@ class Penalty(BaseStrategy):
         return "Penalty"
 
     def execute(self):
+        # TODO uncomment in emergency
+        # if self.world.pitch.zones[self.world.our_defender.zone].isInside(self.world.ball.x, self.world.ball.y) and \
+        #         self.world.ball.velocity < BALL_VELOCITY:
+        #     # ball is in our zone, and it's moving slowly, go and catch
+        #     return GoToBall(self.world, self.comms_manager)
+        #
+        # if self.world.our_defender.has_ball(self.world.ball):
+        #     return BouncePass(self.world, self.comms_manager)
+
         angle = self.world.our_defender.get_rotation_to_point(self.world.our_defender.x, 0)
 
         if self.send_correct_turn(angle, AIMING_THRESHOLD):
